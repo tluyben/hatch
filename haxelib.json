@@ -1,0 +1,14 @@
+{
+    "name": "hatch",
+    "url" : "https://github.com/asciiascetic/hatch",
+    "license": "MIT",
+    "tags": ["lisp","scheme"],
+    "description": "A scheme embedded in Haxe.",
+    "version": "0.0.1",
+    "classPath": "src/",
+    "releasenote": "alpha",
+    "contributors": ["asciiascetic"],
+    "dependencies": {
+	"farcek":"1.4.3"
+    }
+}
