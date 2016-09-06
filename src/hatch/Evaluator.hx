@@ -4,7 +4,9 @@ import haxe.ds.Option;
 import Reader;
 using Lambda;
 
-typedef Bindings = Map<String,Dynamic>;
+typedef Bindings = Map<String,HatchValue>;
+
+
 
 class Evaluator {
 
@@ -26,11 +28,8 @@ class Evaluator {
     test("44.32");
     test('"hello there"');
     test("(quote (1 2 3))");
-    test("(+ 1 2)");
-    test('(+ "abcd" "efgh")');
-    test('(* 3 4)');
-    test('(/ 3 4.0)');
-	 
+    test("(lambda (x) x)");
+    test("((lambda (x) x) 2)");
 
   }
   
@@ -42,19 +41,10 @@ class Evaluator {
   }
 
   private static function addCoreBindings() {
-    var bindings : Bindings = new Map();
-    bindings.set('+', function (x, y) {return x + y;});
-    bindings.set('-', function (x, y) {return x - y;});
-    bindings.set('*', function (x, y) {return x * y;});
-    bindings.set('/', function (x, y) {return x / y;});
-    bindings.set('map', function (f, a) {
-	return eval(a).map(eval(f));
-      });
-    bindingStack.unshift( bindings );
   }
 
   // move up the statck looking for the somthing bound
-  private static function lookupBinding (s : String) : Option<Dynamic> {
+  private static function lookupBinding (s : String) : Option<HatchValue> {
     var spec = s;
     for (bindings in bindingStack)
       if (bindings.exists( spec )) return Some(bindings.get( spec ));
@@ -62,54 +52,95 @@ class Evaluator {
   }
 
 
-  private static function applyQuote( a : Array<Term> ) : Term {
-    if (a.length == 1) {
-      return a[0];
-    }
+  private static function evalQuote( a : Array<HatchValue> ) {
+    if (a.length == 1) return a[0];
     throw "error, quote form takes 1 argument";
   }
   
-  private static function evalList( a : Array<Term>)  {
-    if (a.length == 0) return eval(NilT);
-
-    switch (a[0]) {
-    case SymbolT('quote'): return applyQuote( a.slice(1) );
-    case SymbolT(f): switch (lookupBinding(f)) {
-      case None: throw 'no callable symbol $f';
-      case Some(value): {
-	var value = value;
-	if (Reflect.isFunction( value )) {
-	  try {
-	    return Reflect.callMethod( null, value, [for (x in a.slice(1)) eval(x)]);
-	  } catch (e:Dynamic) {
-	    throw '$f bound to $value cannot be applied to arguments provided';
-	  }
-	} else {
-	  throw '$f is not callable';
-	}
-      }
-      }
-    default: throw 'error evaluating form ${a[0]}';
+  private static function evalSymbol( s : String, args : Array<HatchValue>) {
+    switch (lookupBinding( s )) {
+    case Some(FunctionV(f)) : f(ListV(args));
+    default: throw 'Error: cannot eval symbol $s';
     }
   }
 
-  private static function evalVar (v) {
+  private static function allSymbols (vars : Array<HatchValue>) {
+    for (v in vars) switch (v) {
+      case SymbolV(_): 'no_op';
+      default: return false;
+      }
+    return true;
+  }
+
+  private static function symbolsToNames (vars : Array<HatchValue>) {
+    // the default case should never happen, but be warned...
+    return [for (v in vars) switch (v) {case SymbolV(s): s; default: '';}];
+  }
+  
+  private static function introduceBindings (names: Array<String>, vals: Array<HatchValue>) {
+    var bindings : Bindings = new Map();
+    trace('binding $names to $vals');
+    for (i in 0...names.length) bindings.set( names[i], eval(vals[i]));
+    bindingStack.unshift( bindings );
+  }
+
+  private static function popBindings () {
+    bindingStack.shift();
+  }
+  
+  // (lambda (a1 a2) form1 form1 form2) 
+  private static function evalLambda( a : Array<HatchValue> ) {
+    if (a.length != 2) throw "Error: malformed lambda expression";
+    return switch (a) {
+    case [ListV(args), form] if ( allSymbols( args ) ):  {
+	var names = symbolsToNames(args);
+	var f = function (expr : HatchValue) {
+	  trace('in f, expr = $expr');
+	  switch (expr) {
+	  case ListV(exprs): {
+	    // add a check here that names.length == exprs.length
+	    introduceBindings( names, exprs);
+	    var v = eval( form );
+	    popBindings();
+	    return v;
+	  }
+	  default: throw "OH NO, SOMEHOW THIS FUNCTION WAS CALLED INCORRECTLY";
+	  }
+	};
+	return FunctionV(f);	  
+      }
+    default: throw "Error: malformed lambda expression";
+    };
+  }
+  
+  private static function evalList( a : Array<HatchValue>)  {
+    if (a.length == 0) return eval(NilV);
+
+    return switch (a[0]) {
+    case SymbolV('lambda'): evalLambda(a.slice(1));
+    case SymbolV('quote'): evalQuote( a.slice(1) );
+    default: switch( eval(a[0]) ) {
+      case FunctionV(f): {
+	trace('calling function $f with ${ListV(a.slice(1))}');
+	f( ListV( a.slice(1)));
+      }
+      default: throw 'Error: cannot eval $a as given';
+      };
+    };
+  }
+
+  private static function evalVar (v:String) {
     switch ( lookupBinding( v) ) {
     case None: throw 'unbound variable $v';
     case Some(v): return v;
     }
   }
   
-  public static function eval (exp : Term) : Dynamic {
+  public static function eval (exp : HatchValue) : HatchValue {
     return switch (exp) {
-    case IntT(i): i;
-    case FloatT(f): f;
-    case StringT(s): s;
-    case NilT: null;
-      //    case VarT(v): evalVar(v);
-    case BlankT: null;
-    case SymbolT(a): evalVar(a);
-    case ListT(a): evalList( a );
+    case SymbolV(a): evalVar(a);
+    case ListV(a): evalList( a );
+    default: exp;
     };
   }
 

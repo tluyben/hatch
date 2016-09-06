@@ -3,32 +3,31 @@
 import farcek.Parser;
 import farcek.Parser as P;
 
-enum Term {
-  IntT(i:Int);
-  FloatT(i:Float);
-  StringT(i:String);
-  //  VarT(i:String);
-  BlankT;
-  SymbolT(a:String);
-  ListT(a:Array<Term>);
-  NilT;
-}
 
+enum HatchValue {
+  IntV(i:Int);
+  FloatV(f:Float);
+  StringV(s:String);
+  FunctionV(f: HatchValue -> HatchValue);
+  ListV(a:Array<HatchValue>);
+  SymbolV(a:String);
+  NilV;
+}
 
 class Reader {
 
   // TERM  PARSERS //
-  public static var intP : Parser<Term>;
-  public static var floatP : Parser<Term>;
-  public static var stringP : Parser<Term>;
-  //  public static var varP : Parser<Term>;
-  public static var blankP : Parser<Term>;
-  public static var operatorP : Parser<Term>;
-  public static var symbolP : Parser<Term>;
-  public static var nilP : Parser<Term>;
-  public static var listP : Parser<Term>;  
+  public static var intP : Parser<HatchValue>;
+  public static var floatP : Parser<HatchValue>;
+  public static var stringP : Parser<HatchValue>;
+  //  public static var varP : Parser<HatchValue>;
+  //  public static var blankP : Parser<HatchValue>;
+  public static var operatorP : Parser<HatchValue>;
+  public static var symbolP : Parser<HatchValue>;
+  public static var nilP : Parser<HatchValue>;
+  public static var listP : Parser<HatchValue>;  
 
-  public static var termP : Parser<Term>;
+  public static var termP : Parser<HatchValue>;
 
   public static function init() {
     if (termP == null) {
@@ -41,18 +40,18 @@ class Reader {
       
       // TERM DEFINITIONS 
       intP = P.digit().many1().fmap(function(a) {
-	  return IntT(Std.parseInt(a.join('')));
+	  return IntV(Std.parseInt(a.join('')));
 	});
       
       floatP = P.digit().many1().bind(function (wholes) {
 	  return P.char('.').then(P.digit().many()).fmap(function (decimal) {
-	      return FloatT(Std.parseFloat(wholes.join('') + '.' + decimal.join('')));
+	      return FloatV(Std.parseFloat(wholes.join('') + '.' + decimal.join('')));
 	    });
 	});
       
       stringP = P.char('"').then(notQuoteP.many()).bind(function (contents) {
 	  return P.char('"').fmap(function (ignore) {
-	      return StringT(contents.join(''));
+	      return StringV(contents.join(''));
 	    });
 	});
       
@@ -62,22 +61,22 @@ class Reader {
       // 	    });
       // 	});
       
-      blankP = P.char('_').thento(BlankT);
+      //      blankP = P.char('_').thento(BlankT);
       
       operatorP = P.oneOf("*&^%$#@!<>+-/?.:~=").many1().fmap(function (a) {
-	  return SymbolT( a.join(''));
+	  return SymbolV( a.join(''));
 	});
       
       symbolP = P.lower().bind(function (first) {
 	  return (P.lower().or(specialCharsP)).many().fmap(function (rest) {
-	      return SymbolT( first + rest.join('') );
+	      return SymbolV( first + rest.join('') );
 	    });
 	});
       
-      nilP = P.string('nil').or(openP.then(whitespaceP).then(closeP)).thento(NilT);
+      nilP = P.string('nil').or(openP.then(whitespaceP).then(closeP)).thento(NilV);
       
-      var consing = function (exps : Array<Term>) {
-	return ListT(exps);
+      var consing = function (exps : Array<HatchValue>) {
+	return ListV(exps);
       };
       
       var atomicP = P.choice([
@@ -85,7 +84,7 @@ class Reader {
 			      intP,
 			      stringP,
 			      //			      varP,
-			      blankP,
+			      //			      blankP,
 			      operatorP,
 			      nilP,
 			      symbolP,
