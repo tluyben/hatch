@@ -30,7 +30,12 @@ class Evaluator {
     test("(quote (1 2 3))");
     test("(lambda (x) x)");
     test("((lambda (x) x) 2)");
-
+    test("(lambda () (quote (1 2 3)))");
+    test("((lambda () (quote (1 2 3))))");    
+    test("(define x 10)");
+    test("x");
+    test('(define foo (lambda (x y) "Nothing"))');
+    test('(foo 1 2)');
   }
   
   public static function init () {
@@ -41,6 +46,9 @@ class Evaluator {
   }
 
   private static function addCoreBindings() {
+    var core : Bindings = new Map();
+    bindingStack.unshift(core);
+
   }
 
   // move up the statck looking for the somthing bound
@@ -79,7 +87,6 @@ class Evaluator {
   
   private static function introduceBindings (names: Array<String>, vals: Array<HatchValue>) {
     var bindings : Bindings = new Map();
-    trace('binding $names to $vals');
     for (i in 0...names.length) bindings.set( names[i], eval(vals[i]));
     bindingStack.unshift( bindings );
   }
@@ -95,7 +102,6 @@ class Evaluator {
     case [ListV(args), form] if ( allSymbols( args ) ):  {
 	var names = symbolsToNames(args);
 	var f = function (expr : HatchValue) {
-	  trace('in f, expr = $expr');
 	  switch (expr) {
 	  case ListV(exprs): {
 	    // add a check here that names.length == exprs.length
@@ -109,21 +115,49 @@ class Evaluator {
 	};
 	return FunctionV(f);	  
       }
+    case [NilV, form]: {
+      return FunctionV( function (expr : HatchValue) {
+	  return eval(form);
+	});
+    }
     default: throw "Error: malformed lambda expression";
     };
   }
+
+  private static function bindSymbol (s, v) {
+    var val = eval(v);
+    bindingStack[0].set(s, val);
+    return val;
+  }
+
+  private static function evalDefine (a :Array<HatchValue>) {
+    if (a.length != 2) throw "Error: malformed define statement";
+    return switch (a) {
+    case [SymbolV(s), form]: bindSymbol( s, form);
+    default: throw "Error: malformed define statement";
+    }
+  }
+
+  // private static function evalCons( a : Array<HatchValue>) {
+  //   if (a.length != 2) throw "Error: cons called with wrong nubmer of arguments";
+  //   return switch (a) {
+  //     [h, t]: {
+  // 	var head = eval( h );
+  // 	s
+  //     }
+  //   }
+  // }
   
   private static function evalList( a : Array<HatchValue>)  {
     if (a.length == 0) return eval(NilV);
 
     return switch (a[0]) {
+    case SymbolV('define'): evalDefine(a.slice(1));
     case SymbolV('lambda'): evalLambda(a.slice(1));
     case SymbolV('quote'): evalQuote( a.slice(1) );
+      //    case SymbolV('cons'): evalCons( a.slice(1) );
     default: switch( eval(a[0]) ) {
-      case FunctionV(f): {
-	trace('calling function $f with ${ListV(a.slice(1))}');
-	f( ListV( a.slice(1)));
-      }
+      case FunctionV(f): f( ListV( a.slice(1)));
       default: throw 'Error: cannot eval $a as given';
       };
     };
