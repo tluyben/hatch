@@ -7,7 +7,7 @@ enum Term {
   IntT(i:Int);
   FloatT(i:Float);
   StringT(i:String);
-  VarT(i:String);
+  //  VarT(i:String);
   BlankT;
   SymbolT(a:String);
   ListT(a:Array<Term>);
@@ -21,7 +21,7 @@ class Reader {
   public static var intP : Parser<Term>;
   public static var floatP : Parser<Term>;
   public static var stringP : Parser<Term>;
-  public static var varP : Parser<Term>;
+  //  public static var varP : Parser<Term>;
   public static var blankP : Parser<Term>;
   public static var operatorP : Parser<Term>;
   public static var symbolP : Parser<Term>;
@@ -56,15 +56,15 @@ class Reader {
 	    });
 	});
       
-      varP = P.upper().bind(function (first) {
-	  return (P.alphanum().or(specialCharsP)).many().fmap(function (rest) {
-	      return VarT(first + rest.join(''));
-	    });
-	});
+      // varP = P.upper().bind(function (first) {
+      // 	  return (P.alphanum().or(specialCharsP)).many().fmap(function (rest) {
+      // 	      return VarT(first + rest.join(''));
+      // 	    });
+      // 	});
       
       blankP = P.char('_').thento(BlankT);
       
-      operatorP = P.oneOf("*'&^%$#@!<>+-/?.:~=").many1().fmap(function (a) {
+      operatorP = P.oneOf("*&^%$#@!<>+-/?.:~=").many1().fmap(function (a) {
 	  return SymbolT( a.join(''));
 	});
       
@@ -84,7 +84,7 @@ class Reader {
 			      floatP,
 			      intP,
 			      stringP,
-			      varP,
+			      //			      varP,
 			      blankP,
 			      operatorP,
 			      nilP,
@@ -100,4 +100,5 @@ class Reader {
     return P.runE( termP, s);
   }
   
+
 }
