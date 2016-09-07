@@ -11,7 +11,8 @@ enum HatchValue {
   FunctionV(f: HatchValue -> HatchValue);
   ListV(a:Array<HatchValue>);
   SymbolV(a:String);
-  NilV;
+  BoolV(b:Bool);
+    //  NilV;
 }
 
 class Reader {
@@ -24,8 +25,9 @@ class Reader {
   //  public static var blankP : Parser<HatchValue>;
   public static var operatorP : Parser<HatchValue>;
   public static var symbolP : Parser<HatchValue>;
-  public static var nilP : Parser<HatchValue>;
+  //  public static var nilP : Parser<HatchValue>;
   public static var listP : Parser<HatchValue>;  
+  public static var boolP : Parser<HatchValue>;
 
   public static var termP : Parser<HatchValue>;
 
@@ -62,8 +64,9 @@ class Reader {
       // 	});
       
       //      blankP = P.char('_').thento(BlankT);
+
       
-      operatorP = P.oneOf("*&^%$#@!<>+-/?.:~=").many1().fmap(function (a) {
+      operatorP = P.oneOf("*&^%$@!<>+-/?.:~='").many1().fmap(function (a) {
 	  return SymbolV( a.join(''));
 	});
       
@@ -73,7 +76,9 @@ class Reader {
 	    });
 	});
       
-      nilP = P.string('nil').or(openP.then(whitespaceP).then(closeP)).thento(NilV);
+      //      nilP = openP.then(whitespaceP).then(closeP).thento(NilV);
+
+      boolP = P.stringTo('#f', BoolV(false)).or(P.stringTo('#t', BoolV(true)));
       
       var consing = function (exps : Array<HatchValue>) {
 	return ListV(exps);
@@ -86,7 +91,8 @@ class Reader {
 			      //			      varP,
 			      //			      blankP,
 			      operatorP,
-			      nilP,
+			      boolP,
+			      //			      nilP,
 			      symbolP,
 			      ]);
       
