@@ -7,9 +7,7 @@ using Lambda;
 typedef Bindings = Map<String,HatchValue>;
 
 
-
 class Evaluator {
-
 
   private static var bindingStack : Array<Bindings>;
   
@@ -62,10 +60,32 @@ class Evaluator {
     }
   }
 
+  private static function wrapEval (f : Array<HatchValue> -> HatchValue) {
+    var hf = function (hv : HatchValue) {
+      return switch (hv) {
+      case ListV(l): f(l);
+      default: throw("Error: something horrible has happened :( ");
+      };
+    };
+    return FunctionV(hf);
+  }
+
+      
   private static function addCoreBindings() {
     var core : Bindings = new Map();
     bindingStack.unshift(core);
+    
+    core.set('cons', wrapEval(evalCons));
+    core.set('empty?',  wrapEval(evalIsEmpty));
+    core.set('list?',  wrapEval(evalIsList));
+    core.set('not', wrapEval(evalNot));
+    core.set('head', wrapEval(evalHead));
+    core.set('tail', wrapEval(evalTail));
+    core.set('++', wrapEval(evalPlus));
+    core.set('--', wrapEval(evalMinus));
+    core.set('!', wrapEval(evalNth));
 
+    
     evalR('(define map (lambda (f l) 
                        (if (empty? l) l
                            (cons (f (head l)) 
@@ -74,6 +94,9 @@ class Evaluator {
     evalR('(define fold (lambda (f acc l)
                           (if (empty? l) acc
                               (fold f (f acc (head l)) (tail l)))))');
+
+
+
     
   }
 
@@ -227,6 +250,19 @@ class Evaluator {
     };
   }
 
+
+  private static function evalMinus (a : Array<HatchValue>) {
+    if (a.length != 2) throw "Error: -- called with wrong number of arguments";
+    return switch( a.map(eval) ) {
+    case [IntV(x), IntV(y)] : IntV(x - y);
+    case [IntV(x), FloatV(y)] : FloatV(x - y);
+    case [FloatV(x), IntV(y)] : FloatV(x - y);
+    case [StringV(x), StringV(y)] : StringV( StringTools.replace(x, y, '') );
+    default: throw "Error, -- called with bad arguments";
+    };
+  }
+
+  
   private static function evalHead ( a: Array<HatchValue> ) {
     if (a.length != 1) throw "error, head called with wrong number args";
     return switch( eval(a[0]) ) {
@@ -242,6 +278,14 @@ class Evaluator {
     default: throw "no tail of non list";
     };
   }
+
+  private static function evalNth (a : Array<HatchValue> ) {
+    if (a.length != 2 ) throw "error, special form ! takes two arguments (! int list)";
+    return switch ([eval(a[0]), eval(a[1])]) {
+    case [IntV(n), ListV(l)]: l[n];
+    default: throw "error, special form, call like this (! int list)";
+    }
+  }
   
   private static function evalList( a : Array<HatchValue>)  {
     if (a.length == 0) return ListV(a);
@@ -250,14 +294,17 @@ class Evaluator {
     case SymbolV('define'): evalDefine(a.slice(1));
     case SymbolV('lambda'): evalLambda(a.slice(1));
     case SymbolV('quote'): evalQuote( a.slice(1) );
-    case SymbolV('cons'): evalCons( a.slice(1) );
-    case SymbolV('empty?'): evalIsEmpty( a.slice(1) );
-    case SymbolV('list?'): evalIsList( a.slice(1));
     case SymbolV('if'): evalIf( a.slice( 1 ));
-    case SymbolV('not'): evalNot( a.slice( 1 ));
-    case SymbolV('head'): evalHead( a.slice( 1 ));
-    case SymbolV('tail') :evalTail( a.slice( 1 ));
-    case SymbolV('++'): evalPlus( a.slice(1));
+
+    // case SymbolV('cons'): evalCons( a.slice(1) );
+    // case SymbolV('empty?'): evalIsEmpty( a.slice(1) );
+    // case SymbolV('list?'): evalIsList( a.slice(1));
+    // case SymbolV('not'): evalNot( a.slice( 1 ));
+    // case SymbolV('head'): evalHead( a.slice( 1 ));
+    // case SymbolV('tail') :evalTail( a.slice( 1 ));
+    // case SymbolV('++'): evalPlus( a.slice(1));
+    // case SymbolV('--'): evalMinus( a.slice(1));
+    // case SymbolV('!'): evalNth( a.slice(1) );
     default: switch( eval(a[0]) ) {
       case FunctionV(f): f( ListV( a.slice(1)));
       default: throw 'Error: cannot eval $a as given';
