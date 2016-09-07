@@ -74,7 +74,10 @@ class Evaluator {
   private static function addCoreBindings() {
     var core : Bindings = new Map();
     bindingStack.unshift(core);
-    
+
+
+
+    //    core.set('quote', wrapEval(evalQuote));
     core.set('cons', wrapEval(evalCons));
     core.set('empty?',  wrapEval(evalIsEmpty));
     core.set('list?',  wrapEval(evalIsList));
@@ -85,6 +88,9 @@ class Evaluator {
     core.set('--', wrapEval(evalMinus));
     core.set('!', wrapEval(evalNth));
 
+    // core.set('eval', FunctionV(function (exp) {
+	  
+    // 	});
     
     evalR('(define map (lambda (f l) 
                        (if (empty? l) l
@@ -93,8 +99,10 @@ class Evaluator {
 
     evalR('(define fold (lambda (f acc l)
                           (if (empty? l) acc
-                              (fold f (f acc (head l)) (tail l)))))');
+                              (fold f (f (head l) acc) (tail l)))))');
 
+    evalR('(define reverse (lambda ( l ) (fold cons () l)))');
+    evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (++ 1 acc)) 0 l)))');
 
 
     
@@ -103,8 +111,11 @@ class Evaluator {
   // move up the statck looking for the somthing bound
   private static function lookupBinding (s : String) : Option<HatchValue> {
     var spec = s;
-    for (bindings in bindingStack)
-      if (bindings.exists( spec )) return Some(bindings.get( spec ));
+    for (bindings in bindingStack) {
+      if (bindings.exists( spec )) {
+	return Some(bindings.get( spec ));
+      }
+    }
     return None;
   }
 
@@ -113,12 +124,12 @@ class Evaluator {
     throw "error, quote form takes 1 argument";
   }
   
-  private static function evalSymbol( s : String, args : Array<HatchValue>) {
-    switch (lookupBinding( s )) {
-    case Some(FunctionV(f)) : f(ListV(args));
-    default: throw 'Error: cannot eval symbol $s';
-    }
-  }
+  // private static function evalSymbol( s : String, args : Array<HatchValue>) {
+  //   switch (lookupBinding( s )) {
+  //   case Some(FunctionV(f)) : f(ListV(args));
+  //   default: throw 'Error: cannot eval symbol $s';
+  //   }
+  // }
 
   private static function allSymbols (vars : Array<HatchValue>) {
     for (v in vars) switch (v) {
@@ -143,7 +154,6 @@ class Evaluator {
     bindingStack.shift();
   }
   
-  // (lambda (a1 a2) form1 form1 form2) 
   private static function evalLambda( a : Array<HatchValue> ) {
     if (a.length != 2) throw "Error: malformed lambda expression";
     return switch (a) {
@@ -163,16 +173,11 @@ class Evaluator {
 	};
 	return FunctionV(f);	  
       }
-    // case [NilV, form]: {
-    //   return FunctionV( function (expr : HatchValue) {
-    // 	  return eval(form);
-    // 	});
-    // }
     default: throw "Error: malformed lambda expression";
     };
   }
 
-  private static function bindSymbol (s, v) {
+  private static function bindSymbol (s:String, v:HatchValue) {
     var val = eval(v);
     bindingStack[0].set(s, val);
     return val;
@@ -193,8 +198,9 @@ class Evaluator {
     return switch (tail) {
       //    case NilV: ListV([head]);
     case ListV(l): {
-      l.unshift( head );
-      ListV(l);
+      var l2 = l.copy();
+      l2.unshift( head );
+      ListV(l2);
     }
     default: ListV([head, tail]);
     };
@@ -272,7 +278,7 @@ class Evaluator {
   }
 
   private static function evalTail (a : Array<HatchValue>) {
-    if (a.length != 1) throw "error";
+    if (a.length != 1) throw "error, tail called with wrong number of args";
     return switch(eval(a[0])) {
     case ListV(b) if (b.length > 0): ListV(b.slice(1));
     default: throw "no tail of non list";
@@ -293,18 +299,8 @@ class Evaluator {
     return switch (a[0]) {
     case SymbolV('define'): evalDefine(a.slice(1));
     case SymbolV('lambda'): evalLambda(a.slice(1));
-    case SymbolV('quote'): evalQuote( a.slice(1) );
     case SymbolV('if'): evalIf( a.slice( 1 ));
-
-    // case SymbolV('cons'): evalCons( a.slice(1) );
-    // case SymbolV('empty?'): evalIsEmpty( a.slice(1) );
-    // case SymbolV('list?'): evalIsList( a.slice(1));
-    // case SymbolV('not'): evalNot( a.slice( 1 ));
-    // case SymbolV('head'): evalHead( a.slice( 1 ));
-    // case SymbolV('tail') :evalTail( a.slice( 1 ));
-    // case SymbolV('++'): evalPlus( a.slice(1));
-    // case SymbolV('--'): evalMinus( a.slice(1));
-    // case SymbolV('!'): evalNth( a.slice(1) );
+    case SymbolV('quote'): evalQuote( a.slice(1) );      
     default: switch( eval(a[0]) ) {
       case FunctionV(f): f( ListV( a.slice(1)));
       default: throw 'Error: cannot eval $a as given';
