@@ -14,7 +14,7 @@ class Evaluator {
   public static function init () {
     if (coreBindings == null) {
       addCoreBindings();
-      RESERVED_NAMES = ["if","cond","let","lambda","define"];
+      RESERVED_NAMES = ["if","cond","let","lambda","define","#f","#t"];
     }
   }
 
@@ -58,11 +58,11 @@ class Evaluator {
     core.set('list', wrapEval(evalListFunction));
     core.set('$', wrapEval(evalPartial));
     core.set('=', wrapEval(evalEqual));
-
-    // core.set('eval', FunctionV(function (exp) {
+    core.set('eval', wrapEval(function (exp, bs) {
+	  if (exp.length != 1) throw "Bad eval call";
+	  return eval( eval( exp[0], bs), bs);
+	}));
 	  
-    // 	});
-    
     evalR('(define map (lambda (f l) 
                        (if (empty? l) l
                            (cons (f (head l)) 
