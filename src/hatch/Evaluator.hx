@@ -9,10 +9,12 @@ using Lambda;
 class Evaluator {
 
   private static var coreBindings : BindingStack;
+  private static var RESERVED_NAMES : Array<String>;
   
   public static function init () {
     if (coreBindings == null) {
       addCoreBindings();
+      RESERVED_NAMES = ["if","cond","let","lambda","define"];
     }
   }
 
@@ -55,6 +57,7 @@ class Evaluator {
     core.set('and', wrapEval(evalAnd));
     core.set('list', wrapEval(evalListFunction));
     core.set('$', wrapEval(evalPartial));
+    core.set('=', wrapEval(evalEqual));
 
     // core.set('eval', FunctionV(function (exp) {
 	  
@@ -91,13 +94,17 @@ class Evaluator {
   }
 
   private static function symbolsToNames (vars : Array<HatchValue>) {
-    // the default case should never happen, but be warned...
-    return [for (v in vars) switch (v) {case SymbolV(s): s; default: '';}];
+    return vars.map(hxSymbol);
+  }
+
+  private static function checkForReservedNames (ns : Array<String>) {
+    for (n in ns) if (RESERVED_NAMES.has(n)) throw 'Error: $n is a reserved name';
   }
   
   private static function introduceBindings (names: Array<String>,
 					     vals: Array<HatchValue>,
 					     bs : BindingStack) {
+    checkForReservedNames( names ); // Note! this can throws an error
     var bindings : Bindings = new Map();
     for (i in 0...names.length) bindings.set( names[i], eval( vals[i], bs));
     return bs.newScope( bindings );
@@ -222,17 +229,103 @@ class Evaluator {
     };
   }
 
-  private static function evalPlus (a : Array<HatchValue>, bs : BindingStack) {
-    if (a.length != 2) throw "Error: ++ called with wrong number of arguments";
-    return switch( a.map( eval.bind( _, bs ) ) ) {
-    case [IntV(x), IntV(y)] : IntV(x + y);
-    case [IntV(x), FloatV(y)] : FloatV(x + y);
-    case [FloatV(x), IntV(y)] : FloatV(x + y);
-    case [StringV(x), StringV(y)] : StringV('$x$y');
-    default: throw "Error, ++ called with bad arguments";
+
+  private static function evalEqual (a : Array<HatchValue>, bs : BindingStack) {
+    if (a.length < 1) throw "Error, = cannot be called with zero arguments";
+    var val = eval( a[0], bs);
+    for (i in 1...a.length) if ( !eqlHatchVal(val, eval(a[i], bs))) return BoolV(false);
+    return BoolV(true);
+  }
+
+  private static function allIntVals (a : Array<HatchValue> ) {
+    for (v in a) switch (v) {case IntV(_): 'no_op'; default: return false;};
+    return true;
+  }
+
+  private static function allStringVals (a : Array<HatchValue> ) {
+    for (v in a) switch (v) {case StringV(_): 'no_op'; default: return false;};
+    return true;
+  }
+
+  private static function allListVals (a : Array<HatchValue> ) {
+    for (v in a) switch (v) {case ListV(_): 'no_op'; default: return false;};
+    return true;
+  }
+
+  private static function allNumberVals (a : Array<HatchValue> ) {
+    for (v in a) switch (v) {case IntV(_): 'no_op'; case FloatV(_): 'no_op'; default: return false;};
+    return true;
+  }
+
+
+  private static function hxInt (v : HatchValue)  {
+    return switch (v) {
+    case IntV(i) : i;
+    default: throw "Error, bad hx coersion";
     };
   }
 
+  private static function hxFloat (v : HatchValue)  {
+    return switch (v) {
+    case IntV(i) : i+ 0.0;
+    case FloatV(i) : i;
+    default: throw "Error, bad hx coersion";
+    };
+  }
+
+  private static function hxString (v : HatchValue)  {
+    return switch (v) {
+    case StringV(i) : i;
+    default: throw "Error, bad hx coersion";
+    };
+  }
+
+  private static function hxList (v : HatchValue)  {
+    return switch (v) {
+    case ListV(i) : i;
+    default: throw "Error, bad hx coersion";
+    };
+  }
+
+  private static function hxSymbol( v : HatchValue) {
+    return switch (v) {
+    case SymbolV(s): s;
+    default: throw "Error, bad hx coersion";
+    }
+  }
+  
+  private static function evalPlus (a : Array<HatchValue>, bs : BindingStack) {
+    if (a.length < 2) throw "Error: ++ called with wrong number of arguments";
+    var vals = a.map( eval.bind( _, bs ));
+    if (allIntVals( vals ) ) {
+      return IntV(vals.fold(function (v, acc) {return hxInt(v) + acc;}, 0));
+    } else if (allNumberVals( vals )) {
+      return FloatV(vals.fold(function (v, acc) {return hxFloat(v) + acc;}, 0));
+    } else if (allStringVals( vals )) {
+      return StringV(vals.fold(function (v, acc) {return acc + hxString(v);}, ''));
+    } else if (allListVals( vals )) {
+      return ListV(vals.fold(function (v, acc:Array<HatchValue>) {return acc.concat(hxList(v));},[]));
+    } else throw "Error: ++ called with improper arguments";
+  }
+
+  private static function eqlListVal (xs : Array<HatchValue>, ys : Array<HatchValue>) {
+    if (xs.length != ys.length) return false;
+    for (i in 0...xs.length) if (!eqlHatchVal(xs[i],ys[i])) return false;
+    return true;
+  }
+
+  private static function eqlHatchVal ( v1 : HatchValue, v2 : HatchValue) {
+    return switch( [v1, v2]) {
+    case [IntV(x), IntV(y)]: x == y;
+    case [FloatV(x), FloatV(y)] : x == y;
+    case [StringV(x), StringV(y)] : x == y;
+    case [FunctionV(f), FunctionV(g)]: Reflect.compareMethods(f,g);
+    case [ListV(xs), ListV(ys)] : eqlListVal(xs,ys);
+    case [SymbolV(a), SymbolV(b)] : a == b;
+    case [BoolV(a), BoolV(b)]: (a && b) || (!a && !b);
+    default: false;
+    };
+  }
 
   private static function evalMinus (a : Array<HatchValue>, bs : BindingStack) {
     if (a.length != 2) throw "Error: -- called with wrong number of arguments";
@@ -241,10 +334,11 @@ class Evaluator {
     case [IntV(x), FloatV(y)] : FloatV(x - y);
     case [FloatV(x), IntV(y)] : FloatV(x - y);
     case [StringV(x), StringV(y)] : StringV( StringTools.replace(x, y, '') );
+    case [ListV(xs), ListV(ys)] :
+      ListV( [for (x in xs) if (!ys.exists(function (y) {return eqlHatchVal(x,y);})) x]);
     default: throw "Error, -- called with bad arguments";
     };
   }
-
   
   private static function evalHead ( a: Array<HatchValue>, bs : BindingStack ) {
     if (a.length != 1) throw "error, head called with wrong number args";

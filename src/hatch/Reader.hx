@@ -11,11 +11,8 @@ class Reader {
   public static var intP : Parser<HatchValue>;
   public static var floatP : Parser<HatchValue>;
   public static var stringP : Parser<HatchValue>;
-  //  public static var varP : Parser<HatchValue>;
-  //  public static var blankP : Parser<HatchValue>;
   public static var operatorP : Parser<HatchValue>;
   public static var symbolP : Parser<HatchValue>;
-  //  public static var nilP : Parser<HatchValue>;
   public static var listP : Parser<HatchValue>;  
   public static var boolP : Parser<HatchValue>;
 
@@ -47,15 +44,6 @@ class Reader {
 	    });
 	});
       
-      // varP = P.upper().bind(function (first) {
-      // 	  return (P.alphanum().or(specialCharsP)).many().fmap(function (rest) {
-      // 	      return VarT(first + rest.join(''));
-      // 	    });
-      // 	});
-      
-      //      blankP = P.char('_').thento(BlankT);
-
-      
       operatorP = P.oneOf("*&^%$@!<>+-/?.:~='").many1().fmap(function (a) {
 	  return SymbolV( a.join(''));
 	});
@@ -65,8 +53,6 @@ class Reader {
 	      return SymbolV( first + rest.join('') );
 	    });
 	});
-      
-      //      nilP = openP.then(whitespaceP).then(closeP).thento(NilV);
 
       boolP = P.stringTo('#f', BoolV(false)).or(P.stringTo('#t', BoolV(true)));
       
@@ -78,11 +64,8 @@ class Reader {
 			      floatP,
 			      intP,
 			      stringP,
-			      //			      varP,
-			      //			      blankP,
 			      operatorP,
 			      boolP,
-			      //			      nilP,
 			      symbolP,
 			      ]);
       

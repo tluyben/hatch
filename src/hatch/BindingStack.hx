@@ -18,8 +18,10 @@ class BindingStack {
   }
 
   public function bindSymbol (s : String, v : HatchValue) {
-    stack[0].set(s, v);
-    return v;
+    if (!stack[0].exists(s)) {
+      stack[0].set(s, v);
+      return v;
+    } else throw 'cannot rebind symbol $s';
   }
   
   public function newScope (b : Bindings) {
