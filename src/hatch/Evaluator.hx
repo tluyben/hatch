@@ -10,48 +10,6 @@ class Evaluator {
 
   private static var coreBindings : BindingStack;
   
-  public static function main () {
-    Reader.init();
-    init();
-    var test = function (s) {
-      switch (Reader.read(s)) {
-      case Left(e) : trace(e);
-      case Right(v): trace(eval(v, coreBindings));
-      }
-    };
-
-    test("()");
-    test("33");
-    test("44.32");
-    test('"hello there"');
-    test("(quote (1 2 3))");
-    test("(lambda (x) x)");
-    test("((lambda (x) x) 2)");
-    test("(lambda () (quote (1 2 3)))");
-    test("((lambda () (quote (1 2 3))))");    
-    test("(define x 10)");
-    test("x");
-    test("(not x)");
-    test('(define foo (lambda (x y) "Nothing"))');
-    test('(foo 1 2)');
-    test('(quote ())');
-    test('(cons (quote a) (quote (1 2 3)))');
-    test('(cons 10 30)');
-    test('(if 3 "True" "False")');
-    test('(if () "True" "False")');
-    test("(quote ')");
-    test("(not 4)");
-    test("(list? ())");
-    test("(list? (quote (1 2)))");
-    test("(empty? ())");
-    test("(empty? (quote (1 2 3)))");
-    test("(++ 3 4)");
-    test("(map (lambda (x) (++ x 1)) (quote (1 2 3)))");
-    test("(define sum (lambda (l) (fold (lambda (acc v) (++ acc v)) 0 l)))");
-    test("(sum (quote (1 2 3)))");
-    test("(sum (map (lambda (x) (++ x 1)) (quote (1 2 3))))");
-  }
-  
   public static function init () {
     if (coreBindings == null) {
       addCoreBindings();
@@ -92,6 +50,11 @@ class Evaluator {
     core.set('++', wrapEval(evalPlus));
     core.set('--', wrapEval(evalMinus));
     core.set('!', wrapEval(evalNth));
+    core.set('function?', wrapEval(evalIsFunction));
+    core.set('or', wrapEval(evalOr));
+    core.set('and', wrapEval(evalAnd));
+    core.set('list', wrapEval(evalListFunction));
+    core.set('$', wrapEval(evalPartial));
 
     // core.set('eval', FunctionV(function (exp) {
 	  
@@ -106,6 +69,7 @@ class Evaluator {
                           (if (empty? l) acc
                               (fold f (f (head l) acc) (tail l)))))', coreBindings);
 
+    evalR('(define <> (lambda (f g) (lambda (x) (f (g x)))))', coreBindings);
     evalR('(define reverse (lambda ( l ) (fold cons () l)))', coreBindings);
     evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (++ 1 acc)) 0 l)))', coreBindings);
 
@@ -212,6 +176,43 @@ class Evaluator {
     return if (isTruthy( eval( a[0] , bs))) BoolV(false) else BoolV(true);
   }
 
+  private static function evalListFunction (a :Array<HatchValue>, bs : BindingStack) {
+    return ListV(a.map(eval.bind(_, bs)));
+  }
+
+  private static function evalPartial (a : Array<HatchValue>, definingScope : BindingStack) {
+    if (a.length == 0) throw "$ takes at least one argument";
+    var a2 = a.map(eval.bind(_, definingScope)); // might eval a[0] before eval all.. oh well.
+    return switch (a2[0]) {
+    case FunctionV(f): {
+      return FunctionV(function (a3 : HatchValue, callingScope : BindingStack) {
+	  return switch (a3) {
+	  case ListV(exprs): f(ListV(a2.slice(1).concat(exprs)), callingScope); 
+	  default: throw "Oh gosh, something really horrible has happened.";
+	  }
+	});
+    }
+    default: throw "Can't partially evaluate a non function";
+    };    
+  }
+  
+  private static function evalOr (a : Array<HatchValue>, bs: BindingStack) {
+    for (arg in a) {
+      var val = eval( arg, bs);
+      if (isTruthy(val)) return val;
+    }
+    return BoolV(false);
+  }
+
+  private static function evalAnd (a : Array<HatchValue>, bs : BindingStack) {
+    var val = BoolV(false);
+    for (arg in a) {
+      val = eval( arg, bs);    
+      if (!isTruthy(val)) return BoolV(false);
+    }
+    return val;
+  }
+  
   private static function evalIsList ( a : Array<HatchValue> , bs : BindingStack ) {
     if (a.length != 1) throw "Error: list? called with wrong number of arguments";
     return switch( eval(a[0], bs )) {
@@ -261,6 +262,14 @@ class Evaluator {
     };
   }
 
+  private static function evalIsFunction (a : Array<HatchValue>, bs : BindingStack) {
+    if (a.length != 1) throw "function? called with wrong number of arguments";
+    return switch ( eval(a[0], bs) ) {
+    case FunctionV(_): return BoolV(true);
+    default: return BoolV(false);
+    };
+  }
+  
   private static function evalNth (a : Array<HatchValue>, bs : BindingStack ) {
     if (a.length != 2 ) throw "error, special form ! takes two arguments (! int list)";
     return switch ( a.map( eval.bind( _, bs ) ) ) {
@@ -327,6 +336,47 @@ class Evaluator {
     }
   }
   
+  // public static function main () {
+  //   Reader.init();
+  //   init();
+  //   var test = function (s) {
+  //     switch (Reader.read(s)) {
+  //     case Left(e) : trace(e);
+  //     case Right(v): trace(eval(v, coreBindings));
+  //     }
+  //   };
+
+  //   test("()");
+  //   test("33");
+  //   test("44.32");
+  //   test('"hello there"');
+  //   test("(quote (1 2 3))");
+  //   test("(lambda (x) x)");
+  //   test("((lambda (x) x) 2)");
+  //   test("(lambda () (quote (1 2 3)))");
+  //   test("((lambda () (quote (1 2 3))))");    
+  //   test("(define x 10)");
+  //   test("x");
+  //   test("(not x)");
+  //   test('(define foo (lambda (x y) "Nothing"))');
+  //   test('(foo 1 2)');
+  //   test('(quote ())');
+  //   test('(cons (quote a) (quote (1 2 3)))');
+  //   test('(cons 10 30)');
+  //   test('(if 3 "True" "False")');
+  //   test('(if () "True" "False")');
+  //   test("(quote ')");
+  //   test("(not 4)");
+  //   test("(list? ())");
+  //   test("(list? (quote (1 2)))");
+  //   test("(empty? ())");
+  //   test("(empty? (quote (1 2 3)))");
+  //   test("(++ 3 4)");
+  //   test("(map (lambda (x) (++ x 1)) (quote (1 2 3)))");
+  //   test("(define sum (lambda (l) (fold (lambda (acc v) (++ acc v)) 0 l)))");
+  //   test("(sum (quote (1 2 3)))");
+  //   test("(sum (map (lambda (x) (++ x 1)) (quote (1 2 3))))");
+  // }
  
 						   
 }
