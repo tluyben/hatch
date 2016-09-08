@@ -49,10 +49,10 @@ class Reader {
 	});
       
       symbolP = P.lower().bind(function (first) {
-	  return (P.lower().or(specialCharsP)).many().fmap(function (rest) {
-	      return SymbolV( first + rest.join('') );
-	    });
-	});
+      	  return (P.lower().or(specialCharsP)).or(P.digit()).many().fmap(function (rest) {
+      	      return SymbolV( first + rest.join('') );
+      	    });
+      	});
 
       boolP = P.stringTo('#f', BoolV(false)).or(P.stringTo('#t', BoolV(true)));
       

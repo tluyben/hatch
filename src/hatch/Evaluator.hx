@@ -110,7 +110,13 @@ class Evaluator {
 					     bs : BindingStack) {
     checkForReservedNames( names ); // Note! this can throws an error
     var bindings : Bindings = new Map();
-    for (i in 0...names.length) bindings.set( names[i], eval( vals[i], bs));
+    if (names.has('rest&')) {
+      var stop = names.indexOf('rest&');
+      for (i in 0...stop) bindings.set( names[i], eval( vals[i], bs));
+      bindings.set('rest&', ListV( vals.slice( stop ).map( eval.bind( _, bs ))));
+    } else {
+      for (i in 0...names.length) bindings.set( names[i], eval( vals[i], bs));
+    }
     return bs.newScope( bindings );
   }
 
@@ -121,7 +127,8 @@ class Evaluator {
 	var names = symbolsToNames(args);
 	var f = function (expr : HatchValue, callingScope : BindingStack ) {
 	  switch (expr) {
-	  case ListV(exprs) if (names.length == exprs.length): {
+	    //	  case ListV(exprs) if (names.length == exprs.length): {
+	  case ListV(exprs):{
 	    var argumentScope = introduceBindings( names, exprs, callingScope);
 	    var thisScope = argumentScope.prependTo( defineScope );
 	    return eval( form , thisScope);
