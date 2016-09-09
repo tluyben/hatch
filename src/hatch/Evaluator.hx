@@ -55,14 +55,15 @@ class Evaluator {
     core.set('function?', wrapEval(evalIsFunction));
     core.set('or', wrapEval(evalOr));
     core.set('and', wrapEval(evalAnd));
-    core.set('list', wrapEval(evalListFunction));
     core.set('$', wrapEval(evalPartial));
     core.set('=', wrapEval(evalEqual));
     core.set('eval', wrapEval(function (exp, bs) {
 	  if (exp.length != 1) throw "Bad eval call";
 	  return eval( eval( exp[0], bs), bs);
 	}));
-	  
+
+    evalR('(define list (lambda (rest&) rest&))', coreBindings);
+    
     evalR('(define map (lambda (f l) 
                        (if (empty? l) l
                            (cons (f (head l)) 
@@ -81,7 +82,9 @@ class Evaluator {
                               (cons (cons (head xs) (head ys))
                                     (zip (tail xs) (tail ys))))))', coreBindings);
 
-    
+    evalR('(define cond (macro (rest&) (eval (cons or (map ($ cons and) rest&)))))', coreBindings);
+    evalR('(define apply (macro (f args) (eval (cons f (eval args)))))', coreBindings);
+
   }
 
   private static function evalQuote( a : Array<HatchValue>, ignore : BindingStack ) {
@@ -142,6 +145,50 @@ class Evaluator {
     };
   }
 
+
+  private static function macroBindings (ns : Array<String>, exs: Array<HatchValue>) {
+    var quote = function (e : HatchValue) {return ListV([SymbolV('quote'), e]);};
+    var bs : Bindings = new Map();
+    if (ns.has('rest&')) {
+      var stop = ns.indexOf( 'rest&' );
+      for (i in 0...stop) bs.set( ns[i], quote( exs[i] ));
+      bs.set('rest&', quote(ListV( exs.slice( stop ))));
+    } else {
+      for (i in 0...ns.length) bs.set( ns[i], quote( exs[i] ));
+    }
+    return bs;
+  }
+  
+  private static function expandMacro( form : HatchValue, bs: Bindings) {
+    return switch (form) {
+    case SymbolV(s): if (bs.exists(s)) bs.get( s ) else SymbolV(s);
+    case ListV(s): ListV( s.map( expandMacro.bind(_, bs) ));
+    default: form;
+    };
+  }
+  
+  private static function evalMacro (a : Array<HatchValue>, defineScope : BindingStack ) {
+    if (a.length != 2) throw "Error: malformed macro expression";
+    return switch (a) {
+    case [ListV(args), form] if (allSymbols( args )): {
+	var names = symbolsToNames(args);
+	var f = function (expr : HatchValue, callingScope : BindingStack) {
+	  switch (expr) {
+	  case ListV(exprs): {
+	    var boundForms = macroBindings( names, exprs );
+	    var expanded = expandMacro( form, boundForms );
+	    return eval( expanded, callingScope);
+	  }
+	  default: throw "Macro called incorrectly?";
+	  }
+	};
+	return FunctionV(f);
+      }
+    default: throw "Error, Somehow this macro was called incorrectly";
+    };
+  }
+
+  
   private static function evalDefine (a :Array<HatchValue>, bs : BindingStack) {
     if (a.length != 2) throw "Error: malformed define statement";
     return switch (a) {
@@ -192,10 +239,6 @@ class Evaluator {
   private static function evalNot( a : Array<HatchValue>, bs : BindingStack ) {
     if (a.length != 1) throw "Error: not called with wrong number of arguments";
     return if (isTruthy( eval( a[0] , bs))) BoolV(false) else BoolV(true);
-  }
-
-  private static function evalListFunction (a :Array<HatchValue>, bs : BindingStack) {
-    return ListV(a.map(eval.bind(_, bs)));
   }
 
   private static function evalPartial (a : Array<HatchValue>, definingScope : BindingStack) {
@@ -418,6 +461,7 @@ class Evaluator {
     return switch (a[0]) {
     case SymbolV('define'): evalDefine(a.slice(1), bs);
     case SymbolV('lambda'): evalLambda(a.slice(1), bs);
+    case SymbolV('macro'): evalMacro(a.slice(1), bs);
     case SymbolV('if'): evalIf( a.slice( 1 ), bs);
     case SymbolV('let'): evalLet( a.slice( 1 ), bs);
     default: switch( eval( a[0], bs ) ) {
