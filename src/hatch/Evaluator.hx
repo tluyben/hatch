@@ -51,6 +51,9 @@ class Evaluator {
     core.set('tail', wrapEval(evalTail));
     core.set('+', wrapEval(evalPlus));
     core.set('-', wrapEval(evalMinus));
+    core.set('*', wrapEval(evalMult));
+    core.set('/', wrapEval(evalDiv));
+    core.set('%', wrapEval(evalMod));        
     core.set('!', wrapEval(evalNth));
     core.set('function?', wrapEval(evalIsFunction));
     core.set('or', wrapEval(evalOr));
@@ -89,6 +92,8 @@ class Evaluator {
 
     evalR('(define cond (macro (rest&) (eval (cons or (map ($ cons and) rest&)))))', coreBindings);
     evalR('(define apply (macro (f args) (eval (cons f (eval args)))))', coreBindings);
+    evalR('(define < (-> (a b) (= -1 (. Reflect.compare a b))))', coreBindings);
+    evalR('(define > (-> (a b) (not (or (= a b) (< a b)))))', coreBindings);
 
   }
 
@@ -362,6 +367,39 @@ class Evaluator {
     return switch (v) {
     case SymbolV(s): s;
     default: throw "Error, bad hx coersion";
+    }
+  }
+
+  private static function evalMult ( a :Array<HatchValue>, bs: BindingStack) {
+    if (a.length < 2) throw "Error, * called with wrong number of arguments";
+    var vals = a.map( eval.bind(_, bs));
+    if (allIntVals(vals)) {
+      return IntV(vals.fold(function (v, acc) {return hxInt(v) * acc;}, 1));
+    } else if (allNumberVals(vals)) {
+      return FloatV(vals.fold(function (v, acc:Float) {return hxFloat(v) * acc;}, 1.0)); 
+    } else switch (a) {
+      case [IntV(i), StringV(s)]:  return StringV([for (x in 0...i) s].join(''));
+      case [StringV(s), IntV(i)]:  return StringV([for (x in 0...i) s].join(''));
+      default: throw "Error, * called with bad arguments";
+      }
+  }
+
+  private static function evalDiv (a : Array<HatchValue>, bs : BindingStack) {
+    if (a.length != 2) throw "Error, / called with wrong number of arguments";
+    return switch (a.map( eval.bind(_, bs))) {
+    case [IntV(i), IntV(j)]: IntV(Std.int(i / j));
+    case [IntV(i), FloatV(j)] : FloatV(i/j);
+    case [FloatV(i), FloatV(j)] : FloatV(i/j);
+    case [FloatV(i), IntV(j)] : FloatV(i/j);
+    default: throw "Error, / called with the wrong arguments";
+    }
+  }
+
+  private static function evalMod (a :Array<HatchValue>, bs : BindingStack) {
+    if (a.length != 2) throw "Error, % called with wrong number of arguments";
+    return switch (a.map( eval.bind(_, bs))) {
+    case [IntV(i), IntV(j)]: IntV(i % j);
+    default: throw "Error, % called with the wrong arguments";
     }
   }
   
