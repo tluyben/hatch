@@ -28,15 +28,27 @@ class Reader {
       var closeP = P.bracket(whitespaceP, P.char(')'), whitespaceP);
       
       // TERM DEFINITIONS 
-      intP = P.digit().many1().fmap(function(a) {
-	  return IntV(Std.parseInt(a.join('')));
-	});
+      intP = P.char('-').ornot().bind(function (neg) {
+          return P.digit().many1().fmap(function(a) {
+              var i = switch (neg) {
+              case None: Std.parseInt(a.join(''));
+              case Some(_): Std.parseInt('-' + a.join(''));
+              };
+              return IntV(i);
+            });
+        });
       
-      floatP = P.digit().many1().bind(function (wholes) {
-	  return P.char('.').then(P.digit().many()).fmap(function (decimal) {
-	      return FloatV(Std.parseFloat(wholes.join('') + '.' + decimal.join('')));
-	    });
-	});
+      floatP = P.char('-').ornot().bind(function (neg) {
+          return P.digit().many1().bind(function (wholes) {
+              return P.char('.').then(P.digit().many()).fmap(function (decimal) {
+                  var f = switch (neg) {
+                  case None: Std.parseFloat(wholes.join('') + '.' + decimal.join(''));
+                  case Some(_):  Std.parseFloat('-' + wholes.join('') + '.' + decimal.join(''));
+                  };
+                  return FloatV(f);
+                });
+            });
+        });
       
       stringP = P.char('"').then(notQuoteP.many()).bind(function (contents) {
 	  return P.char('"').fmap(function (ignore) {
