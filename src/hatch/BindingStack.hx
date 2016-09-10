@@ -1,6 +1,7 @@
+package hatch;
 
 import haxe.ds.Option;
-import HatchValue.HatchValue;
+import hatch.HatchValue.HatchValue;
 
 typedef Bindings = Map<String,HatchValue>;
 

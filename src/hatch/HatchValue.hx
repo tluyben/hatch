@@ -1,3 +1,5 @@
+package hatch;
+
 
 enum HatchValue {
   IntV(i:Int);

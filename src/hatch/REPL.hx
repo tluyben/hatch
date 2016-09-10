@@ -1,7 +1,11 @@
+package hatch;
+
 import haxe.ds.StringMap;
 import haxe.ds.IntMap;
 import haxe.Http;
-
+import hatch.Reader;
+import hatch.Evaluator;
+import hatch.Printer;
 
 class REPL {
 

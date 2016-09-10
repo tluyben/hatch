@@ -1,6 +1,7 @@
+package hatch;
 
 //import Parse.Term;
-import Reader;
+import hatch.Reader;
 import farcek.Parser as P;
 
 using Lambda;

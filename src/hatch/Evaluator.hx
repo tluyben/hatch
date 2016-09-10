@@ -1,9 +1,9 @@
-
+package hatch;
 
 import haxe.ds.Option;
-import Reader;
-import HatchValue.HatchValue;
-import BindingStack.Bindings;
+import hatch.Reader;
+import hatch.HatchValue.HatchValue;
+import hatch.BindingStack.Bindings;
 using Lambda;
 
 class Evaluator {
@@ -14,7 +14,7 @@ class Evaluator {
   public static function init () {
     if (coreBindings == null) {
       addCoreBindings();
-      RESERVED_NAMES = ["if","cond","let","lambda","define","#f","#t"];
+      RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote"];
     }
   }
 
@@ -49,8 +49,8 @@ class Evaluator {
     core.set('not', wrapEval(evalNot));
     core.set('head', wrapEval(evalHead));
     core.set('tail', wrapEval(evalTail));
-    core.set('++', wrapEval(evalPlus));
-    core.set('--', wrapEval(evalMinus));
+    core.set('+', wrapEval(evalPlus));
+    core.set('-', wrapEval(evalMinus));
     core.set('!', wrapEval(evalNth));
     core.set('function?', wrapEval(evalIsFunction));
     core.set('or', wrapEval(evalOr));
@@ -72,6 +72,12 @@ class Evaluator {
     evalR('(define fold (lambda (f acc l)
                           (if (empty? l) acc
                               (fold f (f (head l) acc) (tail l)))))', coreBindings);
+
+    evalR('(define filter (lambda (p l) 
+                            (reverse (fold (lambda (v acc1) 
+                                               (if (p v) (cons v acc1) acc1)) 
+                                           () 
+                                           l))))', coreBindings);
 
     evalR('(define <> (lambda (f g) (lambda (x) (f (g x)))))', coreBindings);
     evalR('(define reverse (lambda ( l ) (fold cons () l)))', coreBindings);
@@ -537,7 +543,7 @@ class Evaluator {
 
     return switch (a[0]) {
     case SymbolV('define'): evalDefine(a.slice(1), bs);
-    case SymbolV('lambda'): evalLambda(a.slice(1), bs);
+    case SymbolV('lambda'), SymbolV('->'): evalLambda(a.slice(1), bs);
     case SymbolV('macro'): evalMacro(a.slice(1), bs);
     case SymbolV('if'): evalIf( a.slice( 1 ), bs);
     case SymbolV('let'): evalLet( a.slice( 1 ), bs);

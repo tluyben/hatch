@@ -9,6 +9,6 @@
     "releasenote": "alpha",
     "contributors": ["asciiascetic"],
     "dependencies": {
-	"farcek":"1.4.3"
+	"farcek":"1.5.0"
     }
 }

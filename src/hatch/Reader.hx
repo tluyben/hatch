@@ -1,8 +1,8 @@
-
+package hatch;
 
 import farcek.Parser;
 import farcek.Parser as P;
-import HatchValue.HatchValue;
+import hatch.HatchValue.HatchValue;
 
 
 class Reader {
