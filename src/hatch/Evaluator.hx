@@ -74,8 +74,7 @@ class Evaluator {
                               (fold f (f (head l) acc) (tail l)))))', coreBindings);
 
     evalR('(define filter (lambda (p l) 
-                            (reverse (fold (lambda (v acc1) 
-                                               (if (p v) (cons v acc1) acc1)) 
+                            (reverse (fold (-> (v acc) (if (p v) (cons v acc) acc)) 
                                            () 
                                            l))))', coreBindings);
 
@@ -129,18 +128,28 @@ class Evaluator {
     return bs.newScope( bindings );
   }
 
+  private static function redefineForm( form: HatchValue, scope : BindingStack) {
+    return switch (form) {
+    case ListV(frms): ListV(frms.map( redefineForm.bind(_, scope)));
+    case SymbolV(s): switch (scope.lookup(s)) {
+	case None: SymbolV(s);
+	case Some(val): val;
+	}
+    default: form;
+    }
+  }
+  
   private static function evalLambda( a : Array<HatchValue> , defineScope : BindingStack) {
     if (a.length != 2) throw "Error: malformed lambda expression";
     return switch (a) {
     case [ListV(args), form] if ( allSymbols( args ) ):  {
 	var names = symbolsToNames(args);
+	var form2 = redefineForm( form, defineScope);
 	var f = function (expr : HatchValue, callingScope : BindingStack ) {
 	  switch (expr) {
-	    //	  case ListV(exprs) if (names.length == exprs.length): {
 	  case ListV(exprs):{
 	    var argumentScope = introduceBindings( names, exprs, callingScope);
-	    var thisScope = argumentScope.prependTo( defineScope );
-	    return eval( form , thisScope);
+	    return eval( form2 , argumentScope);
 	  }
 	  default: throw "OH NO, SOMEHOW THIS FUNCTION WAS CALLED INCORRECTLY";
 	  }
@@ -293,7 +302,9 @@ class Evaluator {
   private static function evalEqual (a : Array<HatchValue>, bs : BindingStack) {
     if (a.length < 1) throw "Error, = cannot be called with zero arguments";
     var val = eval( a[0], bs);
-    for (i in 1...a.length) if ( !eqlHatchVal(val, eval(a[i], bs))) return BoolV(false);
+    for (i in 1...a.length) {
+      if ( !eqlHatchVal(val, eval(a[i], bs))) return BoolV(false);
+    }
     return BoolV(true);
   }
 
