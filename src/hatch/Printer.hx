@@ -17,6 +17,7 @@ class Printer {
     case   ListV(a): '(' + a.map(show).join(' ') + ')';
     case   SymbolV(a): a;
     case   BoolV(b): if (b) '#t' else '#f';
+    case HaxeV(d): '$d';
     };
   }
   

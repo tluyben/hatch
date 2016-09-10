@@ -454,6 +454,80 @@ class Evaluator {
     default: throw "error, malformed let expression";
     };
   }
+
+
+  private static function resolveHaxeSymbol (v : HatchValue)  {
+    switch (v) {
+    case SymbolV(s): {
+
+      var path = s.split('.');
+
+      if (path[path.length - 1].charAt(0) == path[path.length - 1].toLowerCase().charAt(0)) {
+	var clMaybe = Type.resolveClass( path.slice(0, -1).join('.'));
+	if (clMaybe != null)  return Reflect.field( clMaybe, path[path.length - 1]);
+      }
+
+      if (path[path.length - 1].charAt(0) == path[path.length - 1].toUpperCase().charAt(0)) {
+	var clMaybe = Type.resolveClass(s);
+	if (clMaybe != null) return clMaybe;
+      }
+
+      return null;
+    }
+    default: return null;
+    };
+  }
+
+  private static function demarshalHatch (v : HatchValue) : (Dynamic) {
+    return switch (v) {
+    case IntV(i) : i;
+    case FloatV(f): f;
+    case StringV(s) : s;
+    case ListV(l) : l.map(demarshalHatch); // WARNING - PROBABLY NOT HOMOGENEOUS
+    case SymbolV(a) : a;	// WARNING - POSSIBLY USELESS
+    case BoolV(b) : b;
+    case HaxeV(h) : h;
+    case FunctionV(f) : f;	// WARNING - PROBABLY USELESS
+    }
+  }
+  
+  private static function marshalHaxeVal (v : Dynamic) {
+    return switch (Type.typeof(v)) {
+    case TInt: IntV(v);
+    case TFloat: FloatV(v);
+    case TBool: BoolV(v);
+    case TFunction: return FunctionV(function (a, bs) {
+	return switch (a) {
+	case ListV(exprs): {
+	  Reflect.callMethod(null, v, exprs.map(eval.bind(_, bs)).map(demarshalHatch));
+	}
+	default: throw "Error calling external method";
+	};
+      });
+    case TNull: ListV([]);
+    default: {
+      if (Std.is( v, String)) return StringV(v);
+      return HaxeV(v);
+    }
+    };
+  }
+
+  private static function evalHaxe ( a : Array<HatchValue>, bs : BindingStack ) {
+    if (a.length == 0) throw "error, . takes a Haxe identifier and optional arguments";
+    var haxeVal : Dynamic = resolveHaxeSymbol( a[0] );
+    if (haxeVal != null ) {
+      if (Reflect.isObject( haxeVal )) { // MIGHT BE A CLASS
+	return marshalHaxeVal(Type.createInstance( haxeVal, a.slice(1).map(eval.bind(_, bs)).map(demarshalHatch)));
+      } else if (Reflect.isFunction( haxeVal )) {
+	return marshalHaxeVal(Reflect.callMethod(null, haxeVal, a.slice(1).map(eval.bind(_, bs)).map(demarshalHatch)));
+      } else throw 'bad Haxe external ${a[0]}?';
+    } else switch ([ a[0], eval( a[1], bs) ]) {
+      case [SymbolV(s), HaxeV(o)]:
+	return marshalHaxeVal(Reflect.callMethod(o, Reflect.field(o, s),
+						 a.slice(2).map(eval.bind(_, bs)).map(demarshalHatch)));
+      default: throw 'bad haxe method call ${a[0]} on ${a[1]}';
+      }
+  }
   
   private static function evalList( a : Array<HatchValue>, bs : BindingStack)  {
     if (a.length == 0) return ListV(a);
@@ -464,6 +538,7 @@ class Evaluator {
     case SymbolV('macro'): evalMacro(a.slice(1), bs);
     case SymbolV('if'): evalIf( a.slice( 1 ), bs);
     case SymbolV('let'): evalLet( a.slice( 1 ), bs);
+    case SymbolV('.'): evalHaxe( a.slice( 1 ), bs);
     default: switch( eval( a[0], bs ) ) {
       case FunctionV(f): f( ListV( a.slice(1)), bs );
       default: throw 'Error: cannot eval $a as given';

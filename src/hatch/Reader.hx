@@ -21,7 +21,7 @@ class Reader {
   public static function init() {
     if (termP == null) {
       // HELPER DEFINITIONS
-      var specialCharsP = P.oneOf("!#$%&|*+-/:<=>?@^_~'");
+      var specialCharsP = P.oneOf("!#$%&|*+-/:<=>?@^_~.'");
       var whitespaceP = P.oneOf(" \n\t\r").many().fmap(function (a) {return a.join('');});
       var notQuoteP = P.sat(function (s) {return s.charAt(0) != '"';});
       var openP = P.bracket(whitespaceP, P.char('('), whitespaceP);
@@ -48,8 +48,8 @@ class Reader {
 	  return SymbolV( a.join(''));
 	});
       
-      symbolP = P.lower().bind(function (first) {
-      	  return (P.lower().or(specialCharsP)).or(P.digit()).many().fmap(function (rest) {
+      symbolP = P.letter().bind(function (first) {
+      	  return (P.letter().or(specialCharsP)).or(P.digit()).many().fmap(function (rest) {
       	      return SymbolV( first + rest.join('') );
       	    });
       	});

@@ -7,5 +7,6 @@ enum HatchValue {
   ListV(a:Array<HatchValue>);
   SymbolV(a:String);
   BoolV(b:Bool);
+  HaxeV(d:Dynamic);
     //  NilV;
 }

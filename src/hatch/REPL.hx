@@ -1,3 +1,4 @@
+import haxe.ds.StringMap;
 
 class REPL {
 
