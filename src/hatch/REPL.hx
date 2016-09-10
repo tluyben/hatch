@@ -1,4 +1,7 @@
 import haxe.ds.StringMap;
+import haxe.ds.IntMap;
+import haxe.Http;
+
 
 class REPL {
 

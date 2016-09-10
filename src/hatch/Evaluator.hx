@@ -507,6 +507,9 @@ class Evaluator {
     case TNull: ListV([]);
     default: {
       if (Std.is( v, String)) return StringV(v);
+      
+      if (Std.is( v, Array)) return ListV(v.map(marshalHaxeVal));
+
       return HaxeV(v);
     }
     };
