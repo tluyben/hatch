@@ -4,7 +4,7 @@
     "license": "MIT",
     "tags": ["lisp","scheme"],
     "description": "A scheme embedded in Haxe.",
-    "version": "0.0.1",
+    "version": "0.0.3",
     "classPath": "src/",
     "releasenote": "alpha",
     "contributors": ["asciiascetic"],
