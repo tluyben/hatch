@@ -83,7 +83,7 @@ class Evaluator {
 
     evalR('(define <> (lambda (f g) (lambda (x) (f (g x)))))', coreBindings);
     evalR('(define reverse (lambda ( l ) (fold cons () l)))', coreBindings);
-    evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (++ 1 acc)) 0 l)))', coreBindings);
+    evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (+ 1 acc)) 0 l)))', coreBindings);
     evalR('(define <$ (lambda (x) (lambda (f) (f x))))', coreBindings);
     evalR('(define zip (lambda (xs ys)
                           (if (or (empty? xs) (empty? ys)) ()
