@@ -474,10 +474,11 @@ class Evaluator {
   }
   
   private static function evalNth (a : Array<HatchValue>, bs : BindingStack ) {
-    if (a.length != 2 ) throw "error, special form ! takes two arguments (! int list)";
+    if (a.length != 2 ) throw "error, special form ! takes two arguments (! int sequence)";
     return switch ( a.map( eval.bind( _, bs ) ) ) {
     case [IntV(n), ListV(l)]: l[n];
-    default: throw "error, special form, call like this (! int list)";
+    case [IntV(n), StringV(l)]: StringV(l.charAt(n));
+    default: throw "error, special form, call like this (! int sequence)";
     }
   }
 
@@ -517,11 +518,13 @@ class Evaluator {
 
       var path = s.split('.');
 
+      // its hopefully a class method
       if (path[path.length - 1].charAt(0) == path[path.length - 1].toLowerCase().charAt(0)) {
 	var clMaybe = Type.resolveClass( path.slice(0, -1).join('.'));
 	if (clMaybe != null)  return Reflect.field( clMaybe, path[path.length - 1]);
       }
 
+      // its probably a class
       if (path[path.length - 1].charAt(0) == path[path.length - 1].toUpperCase().charAt(0)) {
 	var clMaybe = Type.resolveClass(s);
 	if (clMaybe != null) return clMaybe;
@@ -538,7 +541,8 @@ class Evaluator {
     case IntV(i) : i;
     case FloatV(f): f;
     case StringV(s) : s;
-    case ListV(l) : l.map(demarshalHatch); // WARNING - PROBABLY NOT HOMOGENEOUS
+      //    case ListV(l) : l.map(demarshalHatch); // WARNING - PROBABLY NOT HOMOGENEOUS
+    case ListV(l): l;
     case SymbolV(a) : a;	// WARNING - POSSIBLY USELESS
     case BoolV(b) : b;
     case HaxeV(h) : h;
@@ -563,7 +567,7 @@ class Evaluator {
     default: {
       if (Std.is( v, String)) return StringV(v);
       
-      if (Std.is( v, Array)) return ListV(v.map(marshalHaxeVal));
+      //      if (Std.is( v, Array)) return ListV(v.map(marshalHaxeVal));
 
       return HaxeV(v);
     }
@@ -579,10 +583,22 @@ class Evaluator {
       } else if (Reflect.isFunction( haxeVal )) {
 	return marshalHaxeVal(Reflect.callMethod(null, haxeVal, a.slice(1).map(eval.bind(_, bs)).map(demarshalHatch)));
       } else throw 'bad Haxe external ${a[0]}?';
-    } else switch ([ a[0], eval( a[1], bs) ]) {
-      case [SymbolV(s), HaxeV(o)]:
-	return marshalHaxeVal(Reflect.callMethod(o, Reflect.field(o, s),
-						 a.slice(2).map(eval.bind(_, bs)).map(demarshalHatch)));
+    } else switch ([ a[0], demarshalHatch( eval( a[1], bs)) ]) {
+      case [SymbolV(s), o]: { // should I demarshal? or no?
+        var path = s.split('.');
+        path.reverse();
+        var fieldVal : Dynamic = Reflect.field( o, path.pop() );
+        var fieldOb : Dynamic;
+        while (path.length > 0) {
+          fieldOb = fieldVal;
+          fieldVal = Reflect.field( fieldOb, path.pop() );
+        }
+
+        if (Reflect.isFunction(fieldVal)) {
+          return marshalHaxeVal(Reflect.callMethod(o, Reflect.field(o, s),
+                                                   a.slice(2).map(eval.bind(_, bs)).map(demarshalHatch)));
+        } else return marshalHaxeVal(fieldVal);
+      }
       default: throw 'bad haxe method call ${a[0]} on ${a[1]}';
       }
   }
