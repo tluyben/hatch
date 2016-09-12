@@ -9,9 +9,9 @@ import hatch.Printer;
 
 class REPL {
 
-  private static var VERSION = '0.0.3';
+  public static var VERSION = '0.0.3';
   
-  private static var HEADER : String = "
+  public static var HEADER : String = "
  _           _       _        __     __  
 | |__   __ _| |_ ___| |__    / /     \\ \\ 
 | '_ \\ / _` | __/ __| '_ \\  / /       \\ \\
@@ -20,11 +20,26 @@ class REPL {
 ";
 
   public static function main () {
+    init();
+    start();
+  }
+
+  public static function init () {    
     Reader.init();
     Evaluator.init();
-    start();
-  };
+  }
 
+  public static function repl( s : String) : (String) {
+    switch (Reader.read( s )) {
+    case Left(e): return 'READ ERROR $e';
+    case Right(v): try {
+        return Printer.show( Evaluator.eval( v ));
+      } catch (e:Dynamic) {
+        return 'EVAL ERROR $e';
+      }
+    }
+  }
+  
   // the repl does nothing on non-sys plaforms
   private static function start () {
 #if sys
@@ -33,21 +48,26 @@ class REPL {
       Sys.stdout().writeString("\n> ");
       Sys.stdout().flush();
       var input = Sys.stdin().readLine();
-      switch (Reader.read(input)) {
-      case Left(e): {
-        Sys.stdout().writeString('\n $e');
-        Sys.stdout().flush();
-      }
-      case Right(v): try {
-	  Sys.stdout().writeString('\n ${Printer.show(Evaluator.eval(v))}');
-          Sys.stdout().flush();
-	} catch (e:Dynamic) {
-	  Sys.stdout().writeString('\n ${e}');
-          Sys.stdout().flush();
-	}
-      }
+      Sys.stdout().writeString( repl( input ));
+      Sys.stdout().flush();
     }
 #end
-  }
+  };
+//       switch (Reader.read(input)) {
+//       case Left(e): {
+//         Sys.stdout().writeString('\n $e');
+//         Sys.stdout().flush();
+//       }
+//       case Right(v): try {
+// 	  Sys.stdout().writeString('\n ${Printer.show(Evaluator.eval(v))}');
+//           Sys.stdout().flush();
+// 	} catch (e:Dynamic) {
+// 	  Sys.stdout().writeString('\n ${e}');
+//           Sys.stdout().flush();
+// 	}
+//       }
+//     }
+// #end
+//   }
 
 }
