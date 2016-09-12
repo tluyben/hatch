@@ -22,19 +22,32 @@ class REPL {
   public static function main () {
     Reader.init();
     Evaluator.init();
+    start();
+  };
+
+  // the repl does nothing on non-sys plaforms
+  private static function start () {
+#if sys
     Sys.stdout().writeString('$HEADER\nVersion $VERSION\n');
     while (true) {
       Sys.stdout().writeString("\n> ");
+      Sys.stdout().flush();
       var input = Sys.stdin().readLine();
       switch (Reader.read(input)) {
-      case Left(e): Sys.stdout().writeString('\n $e');
+      case Left(e): {
+        Sys.stdout().writeString('\n $e');
+        Sys.stdout().flush();
+      }
       case Right(v): try {
 	  Sys.stdout().writeString('\n ${Printer.show(Evaluator.eval(v))}');
+          Sys.stdout().flush();
 	} catch (e:Dynamic) {
 	  Sys.stdout().writeString('\n ${e}');
+          Sys.stdout().flush();
 	}
       }
     }
+#end
   }
 
 }
