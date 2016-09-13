@@ -1,8 +1,6 @@
 package hatch;
 
-import haxe.ds.StringMap;
-import haxe.ds.IntMap;
-import haxe.Http;
+
 import hatch.Reader;
 import hatch.Evaluator;
 import hatch.Printer;
@@ -19,16 +17,52 @@ class REPL {
 |_| |_|\\__,_|\\__\\___|_| |_|  \\_\\ (_) /_/ 
 ";
 
+
+  private static var hist : Array<String>;
+  private static var histIndex : Int;
+  private static var inProgress : String;
+  
   public static function main () {
     init();
     start();
   }
 
   public static function init () {    
+    hist = [];
+    histIndex = 0;
+    inProgress = '';
     Reader.init();
     Evaluator.init();
   }
 
+  public static function getHist () {
+    return if (hist.length > 0 && histIndex != -1) hist[histIndex] else inProgress;
+  }
+
+  public static function addHist ( s : String ) {
+    hist.unshift( s );
+    histIndex = -1;
+    inProgress = '';
+  }
+
+  public static function upOne () {
+    if (histIndex < hist.length - 1) histIndex += 1;
+    return getHist();
+  }
+
+  public static function downOne () {
+    if (histIndex >= 0) histIndex -= 1;
+    return getHist();
+  }
+
+  public static function setInProgress (s : String) {
+    if (histIndex == -1) inProgress = s;
+  }
+  
+  public static function expose (s : String, d : Dynamic) {
+    Evaluator.setCore( s, d);
+  }
+  
   public static function repl( s : String) : (String) {
     switch (Reader.read( s )) {
     case Left(e): return 'READ ERROR $e';
