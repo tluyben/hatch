@@ -1,5 +1,9 @@
 package hatch;
 
+#if neko
+import haxe.Http;
+import haxe.ds.StringMap;
+#end
 
 import hatch.Reader;
 import hatch.Evaluator;

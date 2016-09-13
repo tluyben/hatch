@@ -3,7 +3,7 @@
     "url" : "https://github.com/asciiascetic/hatch",
     "license": "MIT",
     "tags": ["lisp","scheme"],
-    "description": "A scheme embedded in Haxe.",
+    "description": "Yo Dawg, I heard you like lisp, so I put lisp in your Haxe so you can code while you code.",
     "version": "0.0.3",
     "classPath": "src/",
     "releasenote": "alpha",
