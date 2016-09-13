@@ -18,6 +18,10 @@ class Evaluator {
     }
   }
 
+  public static function setCore (s : String, d : Dynamic) {
+    coreBindings.bindSymbol(s, marshalHaxeVal( d ));
+  }
+  
  public static function eval (exp : HatchValue, ?bindings : BindingStack = null) : HatchValue {
    var bs = if (bindings == null) coreBindings else bindings;
     return switch (exp) {
@@ -566,15 +570,26 @@ class Evaluator {
     case TNull: ListV([]);
     default: {
       if (Std.is( v, String)) return StringV(v);
-      
-      //      if (Std.is( v, Array)) return ListV(v.map(marshalHaxeVal));
-
       return HaxeV(v);
     }
     };
   }
 
-  private static function evalHaxe ( a : Array<HatchValue>, bs : BindingStack ) {
+  private static function getAttribute( o : Dynamic, s : String ) : (Dynamic) {
+    if (Reflect.hasField(o, s))  return Reflect.field(o, s);
+    return Reflect.getProperty(o, s);
+  }
+
+  private static function setAttribute( o : Dynamic, s : String, v : Dynamic) {
+    if (Reflect.hasField(o, s)) {
+      Reflect.setField( o, s, v);
+    } else {
+      Reflect.setProperty( o, s, v);
+    }
+  }
+
+  
+  private static function evalHaxe ( a : Array<HatchValue>, bs : BindingStack, ?setter = false) {
     if (a.length == 0) throw "error, . takes a Haxe identifier and optional arguments";
     var haxeVal : Dynamic = resolveHaxeSymbol( a[0] );
     if (haxeVal != null ) {
@@ -587,19 +602,25 @@ class Evaluator {
       case [SymbolV(s), o]: { // should I demarshal? or no?
         var path = s.split('.');
         path.reverse();
-        var fieldVal : Dynamic = Reflect.field( o, path.pop() );
-        var fieldOb : Dynamic;
+        var fieldVal : Dynamic = getAttribute(o, path.pop()); // Reflect.field( o, path.pop() );
+        var fieldOb : Dynamic = o;
         while (path.length > 0) {
           fieldOb = fieldVal;
-          fieldVal = Reflect.field( fieldOb, path.pop() );
+          fieldVal = getAttribute( fieldOb, path.pop()); //Reflect.field( fieldOb, path.pop() );
         }
 
         if (Reflect.isFunction(fieldVal)) {
-          return marshalHaxeVal(Reflect.callMethod(o, Reflect.field(o, s),
-                                                   a.slice(2).map(eval.bind(_, bs)).map(demarshalHatch)));
+          return marshalHaxeVal(Reflect.callMethod( fieldOb, fieldVal,
+                                                    a.slice(2).map( eval.bind( _, bs )).map(demarshalHatch)));
+        } else if (setter) {
+          if (a.length == 3) {
+            var val = eval( a[2], bs);
+            setAttribute( fieldOb, s.split('.').shift(), demarshalHatch( val ));
+            return val;
+          } else throw 'Error .= called with wrong number of terms';
         } else return marshalHaxeVal(fieldVal);
       }
-      default: throw 'bad haxe method call ${a[0]} on ${a[1]}';
+      default: throw 'bad haxe reference ${a[0]} on ${a[1]}';
       }
   }
   
@@ -612,6 +633,7 @@ class Evaluator {
     case SymbolV('macro'): evalMacro(a.slice(1), bs);
     case SymbolV('if'): evalIf( a.slice( 1 ), bs);
     case SymbolV('let'): evalLet( a.slice( 1 ), bs);
+    case SymbolV('.='): evalHaxe( a.slice( 1 ), bs, true);
     case SymbolV('.'): evalHaxe( a.slice( 1 ), bs);
     default: switch( eval( a[0], bs ) ) {
       case FunctionV(f): f( ListV( a.slice(1)), bs );
