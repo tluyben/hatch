@@ -144,6 +144,13 @@ hatch itself), must be *exposed*.  E.g. `hatch.REPL.expose('canvas',
 myCanvas)` will bind the object `myCanvas` to the top-level symbol
 `canvas` in the hatch enviroment.
 
+To actually pass hatch expressions into hatch from the outside
+(i.e. to build your own custom REPL that is right for your project),
+use the `hatch.REPL.repl(s : String) : String` static method.
+
+    hatch.REPL.repl("(+ 1 2 3 4)"); // returns 10
+
+
 The Future
 --------------
 
@@ -157,3 +164,9 @@ There is much to be done. A non-exhaustive list of features to come:
 3. Support for docstrings in the `define` statement
 4. An API ontop of openfl for doing graphical programming in hatch itself
 5. Support for comments and .hatch sourcecode files
+
+
+Disclaimer
+-----------
+
+This is mega-ultra-alpha version stuff here. 
