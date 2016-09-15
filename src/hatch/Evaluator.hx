@@ -9,17 +9,27 @@ using Lambda;
 class Evaluator {
 
   private static var coreBindings : BindingStack;
+  private static var documentation : Map<String,String>;
   private static var RESERVED_NAMES : Array<String>;
   
   public static function init () {
     if (coreBindings == null) {
       addCoreBindings();
-      RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote", ":" ];
+      documentation = new Map();
+      RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote", ":", "help"];
     }
   }
 
   public static function setCore (s : String, d : Dynamic) {
     coreBindings.bindSymbol(s, marshalHaxeVal( d ));
+  }
+
+  private static function documentSymbol ( bs: BindingStack, s : String, doc : String ) {
+    documentation.set(s,doc);
+  }
+
+  private static function lookupDocumentation ( bs: BindingStack, s : String) {
+    return documentation.get(s);
   }
   
  public static function eval (exp : HatchValue, ?bindings : BindingStack = null) : HatchValue {
@@ -215,9 +225,14 @@ class Evaluator {
 
   
   private static function evalDefine (a :Array<HatchValue>, bs : BindingStack) {
-    if (a.length != 2) throw "Error: malformed define statement";
+    if (a.length != 2 && a.length != 3) throw "Error: malformed define statement";
     return switch (a) {
-    case [SymbolV(s), form]: bs.bindSymbol( s, eval(form, bs) );
+    case [SymbolV(s), form]: bs.bindSymbol( s, eval( form, bs ) );
+    case [SymbolV(s), form, StringV(doc)]:  {
+      var val = bs.bindSymbol(s, eval( form, bs ) );
+      documentSymbol( bs, s, doc );
+      val;
+    }
     default: throw "Error: malformed define statement";
     }
   }
@@ -640,6 +655,17 @@ class Evaluator {
     }
     return HaxeV(ob);
   }
+
+  private static function evalHelp (a : Array<HatchValue>, bs: BindingStack) {
+    if (a.length != 1) throw "Bad help lookup";
+    return switch (a[0]) {
+    case SymbolV(s): {
+      var doc = lookupDocumentation(bs, s);
+      if (doc != null) StringV(doc) else StringV("Not Documented");
+    }
+    default: throw "Bad help lookup";
+    };
+  }
   
   private static function evalList( a : Array<HatchValue>, bs : BindingStack)  {
     if (a.length == 0) return ListV(a);
@@ -650,6 +676,7 @@ class Evaluator {
     case SymbolV('macro'): evalMacro(a.slice(1), bs);
     case SymbolV('if'): evalIf( a.slice( 1 ), bs);
     case SymbolV('let'): evalLet( a.slice( 1 ), bs);
+    case SymbolV('help'): evalHelp( a.slice( 1 ), bs );
     case SymbolV('.='): evalHaxe( a.slice( 1 ), bs, true);
     case SymbolV('.'): evalHaxe( a.slice( 1 ), bs);
     case SymbolV(':'): evalObLit( a.slice( 1 ), bs);
