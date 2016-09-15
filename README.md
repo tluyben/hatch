@@ -43,12 +43,12 @@ At this point, you can do lisp stuff. See the
 [manual](not-yet-written) for more info, but here is a copy-and-pasted
 shell session:
 
-```
- _           _       _        __     __ 
-| |__   __ _| |_ ___| |__    / /     \ \ 
-| '_ \ / _` | __/ __| '_ \  / /       \ \
-| | | | (_| | || (__| | | | \ \   _   / /
-|_| |_|\__,_|\__\___|_| |_|  \_\ (_) /_/ 
+``` scheme
+;;  _           _       _        __     __ 
+;; | |__   __ _| |_ ___| |__    / /     \ \ 
+;; | '_ \ / _` | __/ __| '_ \  / /       \ \
+;; | | | | (_| | || (__| | | | \ \   _   / /
+;; |_| |_|\__,_|\__\___|_| |_|  \_\ (_) /_/ 
 
 Version 0.0.3
 
@@ -157,13 +157,13 @@ The Future
 
 There is much to be done. A non-exhaustive list of features to come:
 
-1. A hatch repl for your debugging / playing with your openfl projects
-   as they run (already in progress).
-2. A more sophisticated command line hatch REPL, whith history, and
-   help
-3. Support for docstrings in the `define` statement
-4. An API ontop of openfl for doing graphical programming in hatch itself
-5. Support for comments and .hatch sourcecode files
+1. A hatch REPL for interactively playing with your openfl projects
+   while they are running (already in progress).
+2. A more sophisticated command line hatch REPL, with history, and
+   help functions.
+3. Support for docstrings in the `define` statement.
+4. An API on top of openfl for doing graphical programming in hatch itself.
+5. Support for comments and .hatch sourcecode files.
 
 
 Disclaimer
