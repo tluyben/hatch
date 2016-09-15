@@ -14,7 +14,7 @@ class Evaluator {
   public static function init () {
     if (coreBindings == null) {
       addCoreBindings();
-      RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote"];
+      RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote", ":" ];
     }
   }
 
@@ -99,7 +99,6 @@ class Evaluator {
     evalR('(define < (-> (a b) (= -1 (. Reflect.compare a b))))', coreBindings);
     evalR('(define > (-> (a b) (not (or (= a b) (< a b)))))', coreBindings);
     evalR('(define rep (-> (n f x) (if (> n 1) (f (rep (- n 1) f x)) (f x))))', coreBindings);
-
 
   }
 
@@ -625,6 +624,22 @@ class Evaluator {
       default: throw 'bad haxe reference ${a[0]} on ${a[1]}';
       }
   }
+
+
+  private static function evalObLit( a : Array<HatchValue>, bs : BindingStack) {
+    if (a.length % 2 != 0) throw "Bad object literal syntax";
+    var ob = {};
+    var a2 = a.copy();
+    while (a2.length > 0) {
+      switch (a2.shift()) {
+      case SymbolV(s): {
+	Reflect.setField( ob, s, demarshalHatch(eval( a2.shift(), bs)));
+      }
+      default: throw 'Bad object literal syntax; non-symbol used as field name';
+      }
+    }
+    return HaxeV(ob);
+  }
   
   private static function evalList( a : Array<HatchValue>, bs : BindingStack)  {
     if (a.length == 0) return ListV(a);
@@ -637,6 +652,7 @@ class Evaluator {
     case SymbolV('let'): evalLet( a.slice( 1 ), bs);
     case SymbolV('.='): evalHaxe( a.slice( 1 ), bs, true);
     case SymbolV('.'): evalHaxe( a.slice( 1 ), bs);
+    case SymbolV(':'): evalObLit( a.slice( 1 ), bs);
     default: switch( eval( a[0], bs ) ) {
       case FunctionV(f): f( ListV( a.slice(1)), bs );
       default: throw 'Error: cannot eval $a as given';
