@@ -88,7 +88,7 @@ class Evaluator {
     evalR('(define <> (lambda (f g) (lambda (x) (f (g x)))))', coreBindings);
     evalR('(define reverse (lambda ( l ) (fold cons () l)))', coreBindings);
     evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (+ 1 acc)) 0 l)))', coreBindings);
-    evalR('(define <$ (lambda (x) (lambda (f) (f x))))', coreBindings);
+    evalR('(define <$ (-> (x) (-> (f) (f x))))', coreBindings);
     evalR('(define zip (lambda (xs ys)
                           (if (or (empty? xs) (empty? ys)) ()
                               (cons (cons (head xs) (head ys))
@@ -98,6 +98,8 @@ class Evaluator {
     evalR('(define apply (macro (f args) (eval (cons f (eval args)))))', coreBindings);
     evalR('(define < (-> (a b) (= -1 (. Reflect.compare a b))))', coreBindings);
     evalR('(define > (-> (a b) (not (or (= a b) (< a b)))))', coreBindings);
+    evalR('(define rep (-> (n f x) (if (> n 1) (f (rep (- n 1) f x)) (f x))))', coreBindings);
+
 
   }
 
@@ -125,7 +127,7 @@ class Evaluator {
   private static function introduceBindings (names: Array<String>,
 					     vals: Array<HatchValue>,
 					     bs : BindingStack) {
-    checkForReservedNames( names ); // Note! this can throws an error
+    checkForReservedNames( names ); // Note! this can throw an error
     var bindings : Bindings = new Map();
     if (names.has('rest&')) {
       var stop = names.indexOf('rest&');
@@ -499,7 +501,7 @@ class Evaluator {
   }
 
   private static function exprsFromLetBindings (a : Array<HatchValue>, bs : BindingStack ) {
-    return [for (b in a) switch (b) {case ListV([_,f]): eval( f , bs); default: throw "mega mega prob";}];
+    return [for (b in a) switch (b) {case ListV([_,f]): f; default: throw "mega mega prob";}];
   }
   
   private static function evalLet ( a : Array<HatchValue>, bs : BindingStack ) {
@@ -649,7 +651,8 @@ class Evaluator {
     }
   }
 
-  public static function evalR (s : String, bs : BindingStack) {
+  public static function evalR (s : String, ?bs0 : BindingStack = null) {
+    var bs = if (bs0 == null) coreBindings else bs0;
     switch (Reader.read(s)) {
     case Left(e): throw 'Error: $e';
     case Right(exp): return eval(exp, bs);
