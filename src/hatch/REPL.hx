@@ -22,7 +22,7 @@ class REPL {
 ";
 
 
-  private static var hist : Array<String>;
+  public static var hist : Array<String>;
   private static var histIndex : Int;
   private static var inProgress : String;
   
