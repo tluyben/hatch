@@ -19,7 +19,7 @@ class BindingStack {
   }
 
   public function bindSymbol (s : String, v : HatchValue) {
-    if (!stack[0].exists(s)) {
+    if (!stack[0].exists(s) || isMutable(s)) {
       stack[0].set(s, v);
       return v;
     } else throw 'cannot rebind symbol $s';
@@ -34,4 +34,9 @@ class BindingStack {
   public function prependTo (bs : BindingStack) {
     return new BindingStack(stack.concat(bs.stack));
   }
+
+  private static function isMutable (s : String) : (Bool) {
+    return s.length > 1 && s.charAt(s.length - 1) == '.';
+  }
+
 }

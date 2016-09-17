@@ -16,7 +16,7 @@ class Evaluator {
     if (coreBindings == null) {
       documentation = new Map();
       addCoreBindings();
-      RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote", ":", "help"];
+      RESERVED_NAMES = ["if","cond","let","lambda","->","define",":=","#f","#t",".","quote", ":", "help"];
     }
   }
 
@@ -685,7 +685,7 @@ class Evaluator {
     if (a.length == 0) return ListV(a);
 
     return switch (a[0]) {
-    case SymbolV('define'): evalDefine(a.slice(1), bs);
+    case SymbolV('define'), SymbolV(':='): evalDefine(a.slice(1), bs);
     case SymbolV('lambda'), SymbolV('->'): evalLambda(a.slice(1), bs);
     case SymbolV('macro'): evalMacro(a.slice(1), bs);
     case SymbolV('if'): evalIf( a.slice( 1 ), bs);
