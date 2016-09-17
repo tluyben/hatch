@@ -18,6 +18,8 @@ class Reader {
 
   public static var termP : Parser<HatchValue>;
 
+  public static var exprsP : Parser<Array<HatchValue>>;
+
   public static function init() {
     if (termP == null) {
       // HELPER DEFINITIONS
@@ -83,12 +85,17 @@ class Reader {
       
       listP = P.nested( openP, closeP, P.spaceBracket(atomicP), consing);
       termP = atomicP.or(listP);
+
+      exprsP = P.bracket(whitespaceP, termP, whitespaceP).many1();
     }
   }
 
   public static function read (s : String) {
     return P.runE( termP, s);
   }
-  
 
+  public static function readMany (s : String) {
+    return P.runE( exprsP, s);
+  }
+  
 }

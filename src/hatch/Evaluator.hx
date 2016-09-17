@@ -17,6 +17,9 @@ class Evaluator {
       documentation = new Map();
       addCoreBindings();
       RESERVED_NAMES = ["if","cond","let","lambda","->","define",":=","#f","#t",".","quote", ":", "help"];
+#if sys
+      RESERVED_NAMES = RESERVED_NAMES.concat(["load"]);
+#end
     }
   }
 
@@ -680,11 +683,40 @@ class Evaluator {
     default: throw "Bad help lookup";
     };
   }
+
+
+  
+  private static function evalLoad (a : Array<HatchValue>, bs : BindingStack) {
+#if sys
+    if (a.length == 0) throw "cannot load nothing";
+    var commentR = ~/;[^\n]*\n/g;
+    var cwd = Sys.getCwd();
+    for (path in a)  {
+      var file = '$cwd/${demarshalHatch(path)}';
+      if (sys.FileSystem.exists(file)) {
+	var content = sys.io.File.getContent(file);
+	content = commentR.replace(content,' ');
+	switch (Reader.readMany( content )) {
+	case Left(e): throw 'PARSE ERROR reading $file: $e';
+	case Right(exprs): for (e in exprs) eval( e, bs );
+	}
+      } else {
+	throw 'file not found: $file';
+      }
+    }
+#end
+    return ListV([]);
+  }
+  
+
   
   private static function evalList( a : Array<HatchValue>, bs : BindingStack)  {
     if (a.length == 0) return ListV(a);
 
     return switch (a[0]) {
+#if sys
+    case SymbolV('load'): evalLoad(a.slice(1), bs);
+#end
     case SymbolV('define'), SymbolV(':='): evalDefine(a.slice(1), bs);
     case SymbolV('lambda'), SymbolV('->'): evalLambda(a.slice(1), bs);
     case SymbolV('macro'): evalMacro(a.slice(1), bs);
@@ -716,49 +748,6 @@ class Evaluator {
     }
   }
   
-  // public static function main () {
-  //   Reader.init();
-  //   init();
-  //   var test = function (s) {
-  //     switch (Reader.read(s)) {
-  //     case Left(e) : trace(e);
-  //     case Right(v): trace(eval(v, coreBindings));
-  //     }
-  //   };
-
-  //   test("()");
-  //   test("33");
-  //   test("44.32");
-  //   test('"hello there"');
-  //   test("(quote (1 2 3))");
-  //   test("(lambda (x) x)");
-  //   test("((lambda (x) x) 2)");
-  //   test("(lambda () (quote (1 2 3)))");
-  //   test("((lambda () (quote (1 2 3))))");    
-  //   test("(define x 10)");
-  //   test("x");
-  //   test("(not x)");
-  //   test('(define foo (lambda (x y) "Nothing"))');
-  //   test('(foo 1 2)');
-  //   test('(quote ())');
-  //   test('(cons (quote a) (quote (1 2 3)))');
-  //   test('(cons 10 30)');
-  //   test('(if 3 "True" "False")');
-  //   test('(if () "True" "False")');
-  //   test("(quote ')");
-  //   test("(not 4)");
-  //   test("(list? ())");
-  //   test("(list? (quote (1 2)))");
-  //   test("(empty? ())");
-  //   test("(empty? (quote (1 2 3)))");
-  //   test("(++ 3 4)");
-  //   test("(map (lambda (x) (++ x 1)) (quote (1 2 3)))");
-  //   test("(define sum (lambda (l) (fold (lambda (acc v) (++ acc v)) 0 l)))");
-  //   test("(sum (quote (1 2 3)))");
-  //   test("(sum (map (lambda (x) (++ x 1)) (quote (1 2 3))))");
-  // }
- 
-						   
 }
 
 
