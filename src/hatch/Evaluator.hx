@@ -14,8 +14,8 @@ class Evaluator {
   
   public static function init () {
     if (coreBindings == null) {
-      addCoreBindings();
       documentation = new Map();
+      addCoreBindings();
       RESERVED_NAMES = ["if","cond","let","lambda","->","define","#f","#t",".","quote", ":", "help"];
     }
   }
@@ -79,26 +79,36 @@ class Evaluator {
 	  return eval( eval( exp[0], bs), bs);
 	}));
 
-    evalR('(define list (lambda (rest&) rest&))', coreBindings);
+    evalR('(define list (lambda (rest&) rest&) 
+                   "(list a b ...) => (a b ...)")');
     
     evalR('(define map (lambda (f l) 
                        (if (empty? l) l
                            (cons (f (head l)) 
-                                 (map f (tail l))))))', coreBindings);
+                                 (map f (tail l))))) 
+                   "(map f (a b ...)) => ((f a) (f b) ...)")');
 
     evalR('(define fold (lambda (f acc l)
                           (if (empty? l) acc
-                              (fold f (f (head l) acc) (tail l)))))', coreBindings);
+                              (fold f (f (head l) acc) (tail l)))) 
+                   "(fold f acc (a b ... n)) => (f a (f b (f .... (f n acc))))"  )');
 
     evalR('(define filter (lambda (p l) 
                             (reverse (fold (-> (v acc) (if (p v) (cons v acc) acc)) 
                                            () 
-                                           l))))', coreBindings);
+                                           l)))
+                    "(filter p l) returns sublist of x in l for which (p x) is true")');
 
-    evalR('(define <> (lambda (f g) (lambda (x) (f (g x)))))', coreBindings);
-    evalR('(define reverse (lambda ( l ) (fold cons () l)))', coreBindings);
-    evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (+ 1 acc)) 0 l)))', coreBindings);
-    evalR('(define <$ (-> (x) (-> (f) (f x))))', coreBindings);
+    evalR('(define <> (lambda (f g) (lambda (x) (f (g x))))
+                   "(<> f g) applied to x is (f (g x))")');
+    
+    evalR('(define reverse (lambda ( l ) (fold cons () l)))');
+    evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (+ 1 acc)) 0 l)))');
+    evalR('(define <$ (-> (x) (-> (f) (f x))))');
+    evalR('(define >>= (-> (a rest&) 
+                         (if (empty? rest&) a 
+                             (apply >>= (cons ((head rest&) a) (tail rest&)))))
+                   "(>>= x f1 f2 ... fn) returns (fn (... (f2 (f1 x))))")');
     evalR('(define zip (lambda (xs ys)
                           (if (or (empty? xs) (empty? ys)) ()
                               (cons (cons (head xs) (head ys))
@@ -228,7 +238,7 @@ class Evaluator {
     if (a.length != 2 && a.length != 3) throw "Error: malformed define statement";
     return switch (a) {
     case [SymbolV(s), form]: bs.bindSymbol( s, eval( form, bs ) );
-    case [SymbolV(s), form, StringV(doc)]:  {
+    case [SymbolV(s), form, StringV(doc)]: {
       var val = bs.bindSymbol(s, eval( form, bs ) );
       documentSymbol( bs, s, doc );
       val;
@@ -657,9 +667,13 @@ class Evaluator {
   }
 
   private static function evalHelp (a : Array<HatchValue>, bs: BindingStack) {
-    if (a.length != 1) throw "Bad help lookup";
-    return switch (a[0]) {
-    case SymbolV(s): {
+    return switch (a) {
+    case []: {
+      var keys = [for (k in documentation.keys()) k];
+      keys.sort(Reflect.compare);
+      ListV(keys.map(SymbolV));
+    }
+    case [SymbolV(s)]: {
       var doc = lookupDocumentation(bs, s);
       if (doc != null) StringV(doc) else StringV("Not Documented");
     }
