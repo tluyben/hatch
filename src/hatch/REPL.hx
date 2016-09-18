@@ -73,7 +73,7 @@ class REPL {
     case Right(v): try {
         return Printer.show( Evaluator.eval( v ));
       } catch (e:Dynamic) {
-        return 'EVAL ERROR $e';
+        return 'EVAL ERROR for $v,  $e';
       }
     }
   }
