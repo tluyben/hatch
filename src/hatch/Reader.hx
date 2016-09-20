@@ -94,7 +94,7 @@ class Reader {
     return P.runE( termP, s);
   }
 
-  public static function readMany (s : String) {
+  public static function readMany (s : String) : haxe.ds.Either<Dynamic,Array<HatchValue>> {
     return P.runE( exprsP, s);
   }
   

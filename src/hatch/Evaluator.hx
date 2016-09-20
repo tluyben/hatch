@@ -82,47 +82,12 @@ class Evaluator {
 	  return eval( eval( exp[0], bs), bs);
 	}));
 
-    evalR('(define list (lambda (rest&) rest&) 
-                   "(list a b ...) => (a b ...)")');
-    
-    evalR('(define map (lambda (f l) 
-                       (if (empty? l) l
-                           (cons (f (head l)) 
-                                 (map f (tail l))))) 
-                   "(map f (a b ...)) => ((f a) (f b) ...)")');
+    loadPrelude();
 
-    evalR('(define fold (lambda (f acc l)
-                          (if (empty? l) acc
-                              (fold f (f (head l) acc) (tail l)))) 
-                   "(fold f acc (a b ... n)) => (f a (f b (f .... (f n acc))))"  )');
+  }
 
-    evalR('(define filter (lambda (p l) 
-                            (reverse (fold (-> (v acc) (if (p v) (cons v acc) acc)) 
-                                           () 
-                                           l)))
-                    "(filter p l) returns sublist of x in l for which (p x) is true")');
-
-    evalR('(define <> (lambda (f g) (lambda (x) (f (g x))))
-                   "(<> f g) applied to x is (f (g x))")');
-    
-    evalR('(define reverse (lambda ( l ) (fold cons () l)))');
-    evalR('(define length (lambda ( l ) (fold (lambda (ignore acc) (+ 1 acc)) 0 l)))');
-    evalR('(define <$ (-> (x) (-> (f) (f x))))');
-    evalR('(define >>= (-> (a rest&) 
-                         (if (empty? rest&) a 
-                             (apply >>= (cons ((head rest&) a) (tail rest&)))))
-                   "(>>= x f1 f2 ... fn) returns (fn (... (f2 (f1 x))))")');
-    evalR('(define zip (lambda (xs ys)
-                          (if (or (empty? xs) (empty? ys)) ()
-                              (cons (cons (head xs) (head ys))
-                                    (zip (tail xs) (tail ys))))))', coreBindings);
-
-    evalR('(define cond (macro (rest&) (eval (cons or (map ($ cons and) rest&)))))', coreBindings);
-    evalR('(define apply (macro (f args) (eval (cons f (eval args)))))', coreBindings);
-    evalR('(define < (-> (a b) (= -1 (. Reflect.compare a b))))', coreBindings);
-    evalR('(define > (-> (a b) (not (or (= a b) (< a b)))))', coreBindings);
-    evalR('(define rep (-> (n f x) (if (> n 1) (f (rep (- n 1) f x)) (f x))))', coreBindings);
-
+  private static function loadPrelude () {
+    loadString( Prelude.getPrelude(), coreBindings);
   }
 
   private static function evalQuote( a : Array<HatchValue>, ignore : BindingStack ) {
@@ -310,6 +275,7 @@ class Evaluator {
     };    
   }
   
+  // Should be short-circuiting
   private static function evalOr (a : Array<HatchValue>, bs: BindingStack) {
     for (arg in a) {
       var val = eval( arg, bs);
@@ -685,21 +651,25 @@ class Evaluator {
   }
 
 
+  public static function loadString (content : String, bs : BindingStack) {
+    var commentR = ~/;[^\n]*\n/g;
+    content = commentR.replace(content,' ');
+    switch (Reader.readMany( content )) {
+    case Left(e): throw 'PARSE ERROR $e';
+    case Right(exprs):  for (e in exprs) eval( e, bs );
+    }
+  }
+  
   
   private static function evalLoad (a : Array<HatchValue>, bs : BindingStack) {
 #if sys
     if (a.length == 0) throw "cannot load nothing";
-    var commentR = ~/;[^\n]*\n/g;
     var cwd = Sys.getCwd();
     for (path in a)  {
       var file = '$cwd/${demarshalHatch(path)}';
       if (sys.FileSystem.exists(file)) {
 	var content = sys.io.File.getContent(file);
-	content = commentR.replace(content,' ');
-	switch (Reader.readMany( content )) {
-	case Left(e): throw 'PARSE ERROR reading $file: $e';
-	case Right(exprs): for (e in exprs) eval( e, bs );
-	}
+	loadString( content , bs );
       } else {
 	throw 'file not found: $file';
       }
