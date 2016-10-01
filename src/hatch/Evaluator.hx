@@ -620,6 +620,39 @@ class Evaluator {
   }
 
 
+  private static function evalHaxeFunction( a : Array<HatchValue>, defineScope : BindingStack ) {
+    // (function args body)
+    switch (a) {
+    case [ListV([]), _form]:
+      {
+	var lambda = evalLambda( a, defineScope);
+	var f = function () {
+	  return demarshalHatch( eval( ListV([ lambda ]) ));
+	};
+	return HaxeV( f );
+      }
+    case [ListV([SymbolV(arg1)]), _form]:
+      {
+	var lambda = evalLambda( a , defineScope );
+	var f = function (theArg : Dynamic)
+	  {
+	    return demarshalHatch( eval( ListV([ lambda, marshalHaxeVal( theArg )] ))); // This is evaled in defaultScope :(
+	  };
+	return HaxeV( f );
+      }
+    case [ListV([SymbolV(_),SymbolV(_)]), _from]:
+      {
+	var lambda = evalLambda( a , defineScope );
+	var f = function( arg1 : Dynamic, arg2 : Dynamic ) {
+	  return demarshalHatch( eval( ListV([ lambda, marshalHaxeVal( arg1 ), marshalHaxeVal( arg2 )])));
+	};
+	return HaxeV( f );
+      }
+      
+    default: throw "Bad function: syntax, takes zero, one, or two arguments";
+    }
+  }
+  
   private static function evalObLit( a : Array<HatchValue>, bs : BindingStack) {
     if (a.length % 2 != 0) throw "Bad object literal syntax";
     var ob = {};
@@ -680,7 +713,7 @@ class Evaluator {
   
 
   
-  private static function evalList( a : Array<HatchValue>, bs : BindingStack)  {
+  private static function evalList ( a : Array<HatchValue>, bs : BindingStack)  {
     if (a.length == 0) return ListV(a);
 
     return switch (a[0]) {
@@ -696,6 +729,7 @@ class Evaluator {
     case SymbolV('.='): evalHaxe( a.slice( 1 ), bs, true);
     case SymbolV('.'): evalHaxe( a.slice( 1 ), bs);
     case SymbolV(':'): evalObLit( a.slice( 1 ), bs);
+    case SymbolV('function:'): evalHaxeFunction( a.slice( 1 ), bs);
     default: switch( eval( a[0], bs ) ) {
       case FunctionV(f): f( ListV( a.slice(1)), bs );
       default: throw 'Error: cannot eval $a as given';
