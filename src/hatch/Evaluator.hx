@@ -16,7 +16,9 @@ class Evaluator {
     if (coreBindings == null) {
       documentation = new Map();
       addCoreBindings();
-      RESERVED_NAMES = ["if","cond","let","lambda","->","define",":=","#f","#t",".","quote", ":", "help"];
+      RESERVED_NAMES = ["if","cond","let","lambda","->",
+			"define",":=","#f","#t",".","quote", ":",
+			"help", "function:"];
 #if sys
       RESERVED_NAMES = RESERVED_NAMES.concat(["load"]);
 #end
