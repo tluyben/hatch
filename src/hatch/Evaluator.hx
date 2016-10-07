@@ -42,7 +42,6 @@ class Evaluator {
   {
     if (vs.length == 0) return ListV(vs);
 
-    //    var head = eval( env, vs[0] );
     var head = vs[0];
 
     return switch (head)
@@ -65,17 +64,16 @@ class Evaluator {
   }
 
   
-  private static function isLetBindingd ( bindings : HatchValue) : (Bool)
+  private static function isLetBindings ( bindings : HatchValue) : (Bool)
   {
-    return switch (bindings)
+    // ListV([ ListV([ SymbolV(v1), f1]), ListV([ SymbolV(v2), f2]), ...])
+    if (bindings.isList())
       {
-      case ListV(a): a.foreach(function (hv: HatchValue) {
-          return hv.isList() && hv.listContents().foreach(function (bf) {
-              return bf.isList() && (switch (bf) {case ListV([SymbolV(_), _]): true; default: false;});
-            });
-        });
-      default: false;
-      };
+        return bindings.listContents().foreach(function (hv) {
+            return hv.isList() && hv.listContents().length == 2 && hv.listContents()[0].isSymbol();
+          });
+      }
+    return false;
   }
 
   private static function letParams ( bindings : HatchValue ) : Array<String>
@@ -98,7 +96,7 @@ class Evaluator {
   {
     return switch (forms)
       {
-      case [ bindings, body ] if ( isLetBindingd( bindings )):
+      case [ bindings, body ] if ( isLetBindings( bindings )):
         callFunction( env, letParams( bindings), letArgs( env, bindings ), body);
 
       default: throw "Malformed let expression";
