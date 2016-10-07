@@ -29,8 +29,8 @@ class Reader {
       var specialCharsP = P.oneOf("~@$%^&*+=-_?><./\\");
       var whitespaceP = P.oneOf(" \n\t\r").many().thento('');
       var notQuoteP = P.sat(function (s) {return s.charAt(0) != '"';});
-      var openP = P.char('(');
-      var closeP = P.char(')');
+      var openP = P.bracket(whitespaceP, P.char('('), whitespaceP);
+      var closeP = P.bracket(whitespaceP, P.char(')'), whitespaceP);
       
       // TERM DEFINITIONS 
       intP = P.char('-').ornot().bind(function (neg) {
@@ -135,7 +135,8 @@ class Reader {
 
 
     assert('(1)', ListV([IntV(1)]));
-    
+    assert('((+ 1) (* 2 3))', ListV([ListV([SymbolV('+'), IntV(1)]),
+                                     ListV([SymbolV('*'), IntV(2), IntV(3)])]));
   }
   
 }

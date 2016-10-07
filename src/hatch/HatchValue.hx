@@ -12,8 +12,5 @@ enum HatchValue {
              body : HatchValue,
              env : HatchEnv);
   PrimOpV( op : Array<HatchValue> -> HatchValue);
-  
-             
-            
 }
 

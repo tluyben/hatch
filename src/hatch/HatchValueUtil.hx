@@ -21,7 +21,6 @@ class HatchValueUtil {
     }
   }
 
-
   public static function isSymbol ( s : HatchValue ) : (Bool)
   {
     return switch (s)
@@ -40,6 +39,58 @@ class HatchValueUtil {
       }
   }
 
+  public static function isInt (v : HatchValue) : (Bool)
+  {
+    return switch (v)
+      {
+      case IntV(_): true;
+      default: false;
+      }
+  }
+
+  public static function isFloat (v : HatchValue) :(Bool)
+  {
+    return switch (v)
+      {
+      case FloatV(_): true;
+      default: false;
+      }
+  }
+
+  public static function isNumeric (v : HatchValue) : (Bool)
+  {
+    return isInt( v ) || isFloat( v );
+  }
+
+  public static function isString ( v : HatchValue) : (Bool)
+  {
+    return switch (v)
+      {
+      case StringV(_): true;
+      default: false;
+      }
+  }
+
+  public static function isBool ( v : HatchValue) : (Bool)
+  {
+    return switch (v)
+      {
+      case BoolV(_): true;
+      default: false;
+      }
+  }
+
+  public static function isFunctional ( v : HatchValue) : (Bool)
+  {
+    return switch (v)
+      {
+      case FunctionV(_,_,_): true;
+      case PrimOpV(_):true;
+      default: false;
+      }
+  }
+
+  
   public static function listContents ( v : HatchValue) : Array<HatchValue>
   {
     return switch (v) {
@@ -57,6 +108,32 @@ class HatchValueUtil {
       }
   }
 
-  
+  public static function toHaxe ( v : HatchValue ) : (Dynamic)
+  {
+    return switch (v) {
+    case SymbolV( a ) : a;
+    case IntV(i): i;
+    case FloatV(f):f;
+    case BoolV(b):b;
+    case ListV(a): a.map( toHaxe );
+    default: null;              // no support (yet) for demarshalling functionals 
+    }
+  }
+
+
+  public static function show ( v : HatchValue ) : (String)
+  {
+    return switch (v)
+      {
+      case SymbolV( a ) : '$a';
+      case IntV(i): '$i';
+      case StringV(s): '"$s"';
+      case FloatV(f): '$f';
+      case BoolV(b): if (b) '#t' else '#f';
+      case ListV(a): '(${a.map( show ).join(' ')})';
+      case PrimOpV(_): "#<PrimOp>#";
+      case FunctionV(params,_,_): '#<function ${params.length}>#';
+      };
+  }
   
 }

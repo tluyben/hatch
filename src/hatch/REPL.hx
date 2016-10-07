@@ -7,11 +7,12 @@ import haxe.ds.StringMap;
 
 import hatch.Reader;
 import hatch.Evaluator;
-import hatch.Printer;
+
+using hatch.HatchValueUtil;
 
 class REPL {
 
-  public static var VERSION = '0.0.3';
+  public static var VERSION = '0.0.4';
   
   public static var HEADER : String = "
  _           _       _        __     __  
@@ -63,15 +64,15 @@ class REPL {
     if (histIndex == -1) inProgress = s;
   }
   
-  public static function expose (s : String, d : Dynamic) {
-    Evaluator.setCore( s, d);
-  }
+  // public static function expose (s : String, d : Dynamic) {
+  //   Evaluator.setCore( s, d);
+  // }
   
   public static function repl( s : String) : (String) {
     switch (Reader.read( s )) {
     case Left(e): return 'READ ERROR $e';
     case Right(v): try {
-        return Printer.show( Evaluator.eval( v ));
+        return Evaluator.eval( Evaluator.prelude, v ).show();
       } catch (e:Dynamic) {
         return 'EVAL ERROR for $v,  $e';
       }
