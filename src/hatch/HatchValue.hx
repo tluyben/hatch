@@ -8,5 +8,12 @@ enum HatchValue {
   FloatV(f : Float);
   StringV(s : String);
   BoolV(b : Bool);
+  FunctionV( parameters : Array<String>,
+             body : HatchValue,
+             env : HatchEnv);
+  PrimOpV( op : Array<HatchValue> -> HatchValue);
+  
+             
+            
 }
 

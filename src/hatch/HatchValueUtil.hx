@@ -20,5 +20,43 @@ class HatchValueUtil {
     default: return Type.enumEq( v1, v2 );
     }
   }
+
+
+  public static function isSymbol ( s : HatchValue ) : (Bool)
+  {
+    return switch (s)
+      {
+      case SymbolV(_): true;
+      default: false;
+      };
+  }
+
+  public static function isList ( v : HatchValue) : (Bool)
+  {
+    return switch (v)
+      {
+      case ListV(_): true;
+      default: false;
+      }
+  }
+
+  public static function listContents ( v : HatchValue) : Array<HatchValue>
+  {
+    return switch (v) {
+    case ListV(contents) : contents;
+    default: throw  "Cannot unpack list contents from non list form";
+    }
+  }
+
+  public static function symbolString (s : HatchValue) : (String)
+  {
+    return switch (s)
+      {
+      case SymbolV(s): s;
+      default: throw "Error: failed to stringify non-symbol";
+      }
+  }
+
+  
   
 }
