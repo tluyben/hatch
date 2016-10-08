@@ -25,7 +25,7 @@ class PrimOps
       {
       case [IntV(n), ListV(a)] if (n < a.length): a[n];
       case [IntV(n), StringV(s)] if (n < s.length): StringV(s.charAt(n));
-      case [_, v] if (v.isList() or v.isString()):
+      case [_, v] if (v.isList() || v.isString()):
         throw "error: attempted to de index out of sequence bounds";
       default: throw "de index operator called with bad arguments";
       }
@@ -138,26 +138,15 @@ class PrimOps
       }
   }
 
-  // public static function sin (args : Array<HatchValue>) : (HatchValue)
-  // {
-    
-  // }
-  
-  // public static function cos (args : Array<HatchValue>) : (HatchValue)
-  // {
-
-  // }
-
-  // public static function tan (args : Array<HatchValue>) : (HatchValue)
-  // {
-    
-  // }
-
-
-  // public static function tan (args : Array<HatchValue>) : (HatchValue)
-  // {
-    
-  // }
+  public static function concat (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [ListV(a1), ListV(a2)]: ListV(a1.copy().concat( a2.copy() ));
+      case [StringV(s1), StringV(s2)]: StringV(s1 + s2);
+      default: throw "attempt to concatenate not supported on given arguments";
+      }
+  }
 
   
   

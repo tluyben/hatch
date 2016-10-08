@@ -27,7 +27,7 @@ class Evaluator {
       prelude.bind('cons', wrapPrimOp(2, PrimOps.cons));
       prelude.bind('empty?', wrapPrimOp(1, PrimOps.isEmpty));
       prelude.bind('apply', wrapPrimOp(2, PrimOps.apply));
-
+      prelude.bind('concat', wrapPrimOp(2, PrimOps.concat));
       
     }
   }

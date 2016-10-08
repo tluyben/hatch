@@ -21,7 +21,8 @@ class Prelude {
      {name: 'even?', form: '(-> (x) (= 0 (% x 2)))'},
      {name: 'odd?', form: '(<> not even?)'},
      {name: 'zip', form: '(-> (rest&) (if (or (empty? rest&) (some? empty? rest&)) () 
-                                          (cons (map head rest&) (apply zip (map tail rest&)))))'}
+                                          (cons (map head rest&) (apply zip (map tail rest&)))))'},
+     {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'}
        ];
 
 }
