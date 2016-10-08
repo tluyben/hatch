@@ -21,6 +21,11 @@ class HatchValueUtil {
     }
   }
 
+  public static function isBlank (v : HatchValue) : (Bool)
+  {
+    return equal(SymbolV('_'),v);
+  }
+  
   public static function isSymbol ( s : HatchValue ) : (Bool)
   {
     return switch (s)

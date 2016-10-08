@@ -44,6 +44,7 @@ class Evaluator {
     return switch (v)
       {
       case ListV(a): evalList( env, a);
+      case SymbolV('_'): v;     // blank always resolves to itself
       case SymbolV(s): env.lookup(s);
       default: v;
       }
@@ -182,6 +183,11 @@ class Evaluator {
       }
     return newArgs;
   }
+
+  private static function validPartial( params : Array<String>, args : Array<HatchValue>) : (Bool)
+  {
+    return params.length > args.length || args.exists( HatchValueUtil.isBlank );
+  }    
   
   public static function apply (v : HatchValue , args : Array<HatchValue>) : (HatchValue)
   {
@@ -191,12 +197,12 @@ class Evaluator {
 
       case FunctionV( params, body, env) if (validRestArgs( params, args )):
         callFunction( env, params, restArgs( args, params ), body);
+
+      case FunctionV( params, body, env) if (validPartial( params, args)): //params.length >= args.length):
+        makePartial( env, params, args, body);
         
       case FunctionV( params, body, env ) if (params.length == args.length):
         callFunction( env, params, args, body );
-        
-      case FunctionV( params, body, env) if (params.length > args.length):
-        makePartial( env, params, args, body);
         
       default: throw 'Error, cannot apply $v to supplied arguments';
       }
@@ -217,9 +223,29 @@ class Evaluator {
                                        args: Array<HatchValue>,
                                        body : HatchValue) : (HatchValue)
   {
+    var boundParams = [];
+    var unboundParams = [];
+    var bindingArgs = [];
+    
+    for (i in 0...args.length)
+      {
+        switch (args[i]) {
+        case SymbolV('_'):
+          {
+            unboundParams.push(params[i]);
+          }
+        default:
+          {
+            boundParams.push(params[i]);
+            bindingArgs.push(args[i]);
+          }
+        }
+      }
 
-    var partialEnv = env.extend( params.slice(0, args.length), args);
-    return FunctionV(params.slice( args.length ), body, partialEnv);
+    var partialEnv = env.extend( boundParams, bindingArgs);
+    return FunctionV( unboundParams, body, partialEnv);
+    // var partialEnv = env.extend( params.slice(0, args.length), args);
+    // return FunctionV(params.slice( args.length ), body, partialEnv);
 
   }
   
