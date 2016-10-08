@@ -224,7 +224,7 @@ class Evaluator {
                                        body : HatchValue) : (HatchValue)
   {
     var boundParams = [];
-    var unboundParams = [];
+    var unboundParams = params.slice( args.length );
     var bindingArgs = [];
     
     for (i in 0...args.length)
@@ -232,7 +232,7 @@ class Evaluator {
         switch (args[i]) {
         case SymbolV('_'):
           {
-            unboundParams.push(params[i]);
+            unboundParams.unshift(params[i]);
           }
         default:
           {

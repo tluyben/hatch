@@ -18,7 +18,7 @@ class Prelude {
      {name: 'all?', form: '(-> (p l) (not (some? (<> not p) l)))'},
      {name: 'or', form: '(-> (rest&) (some? id rest&))'},
      {name: 'and', form: '(-> (rest&) (all? id rest&))'},
-     {name: 'even?', form: '(-> (x) (= 0 (% x 2)))'},
+     {name: 'even?', form: '(<> (= 0) (% _ 2))'},
      {name: 'odd?', form: '(<> not even?)'},
      {name: 'zip', form: '(-> (rest&) (if (or (empty? rest&) (some? empty? rest&)) () 
                                           (cons (map head rest&) (apply zip (map tail rest&)))))'},
