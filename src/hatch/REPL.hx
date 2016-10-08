@@ -38,8 +38,20 @@ class REPL {
     inProgress = '';
     Reader.init();
     Evaluator.init();
+    loadPrelude();
   }
 
+  private static function loadPrelude () {
+    for (def in Prelude.coreFunctions)
+      {
+        switch (Reader.read( def.form))
+          {
+          case Left(e): throw 'Read error loading prelude in form named ${def.name}';
+          case Right(v): Evaluator.prelude.bind( def.name, Evaluator.eval( Evaluator.prelude, v));
+          }
+      }
+  }
+  
   public static function getHist () {
     return if (hist.length > 0 && histIndex != -1) hist[histIndex] else inProgress;
   }

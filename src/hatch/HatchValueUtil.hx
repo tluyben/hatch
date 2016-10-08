@@ -108,6 +108,23 @@ class HatchValueUtil {
       }
   }
 
+  public static function fromHaxe ( v : Dynamic ) : (HatchValue)
+  {
+    return switch (Type.typeof(v))
+      {
+      case TInt: IntV(v);
+      case TFloat: FloatV(v);
+      case TBool: BoolV(v);
+      case TFunction: PrimOpV(function ( args ) {
+          return fromHaxe( Reflect.callMethod( null, v, args.map( toHaxe )));
+        });
+      default:
+        if (Std.is( v, String)) StringV(v)
+          else if (Std.is(v, Array)) ListV( v.map( fromHaxe ))
+            else throw 'unsupported haxe type';
+      }
+  }
+  
   public static function toHaxe ( v : HatchValue ) : (Dynamic)
   {
     return switch (v) {
@@ -119,8 +136,7 @@ class HatchValueUtil {
     default: null;              // no support (yet) for demarshalling functionals 
     }
   }
-
-
+  
   public static function show ( v : HatchValue ) : (String)
   {
     return switch (v)

@@ -17,6 +17,10 @@ class Evaluator {
       prelude.bind('-', wrapPrimOp(2, PrimOps.sub));
       prelude.bind('*', wrapPrimOp(2, PrimOps.mul));
       prelude.bind('/', wrapPrimOp(2, PrimOps.div));
+      prelude.bind('head', wrapPrimOp(1, PrimOps.head));
+      prelude.bind('tail', wrapPrimOp(1, PrimOps.tail));
+      prelude.bind('cons', wrapPrimOp(2, PrimOps.cons));
+      prelude.bind('empty?', wrapPrimOp(1, PrimOps.isEmpty));
       
     }
   }
@@ -53,6 +57,8 @@ class Evaluator {
       case SymbolV('lambda'), SymbolV('->') if (vs.length == 3): evalLambda( env , vs.slice( 1 ));
 
       case SymbolV('let') if (vs.length == 3): evalLet( env, vs.slice( 1 ));
+
+        //      case SymbolV('define'): evalDefine( env, vs.slice( 1 ));
         
       case PrimOpV(_): apply( head, [ for (v in vs.slice(1)) eval( env , v )]);
 
@@ -63,6 +69,24 @@ class Evaluator {
       }
   }
 
+  // private static function evalDefine ( env : HatchEnv, forms : Array<HatchValue> ) : (HatchValue)
+  // {
+  //   return switch( forms )
+  //     {
+  //     case [SymbolV(symb), form]: {
+  //       var val = eval( env, form );
+  //       env.bind( symb, val );
+  //       return val;
+  //     }
+  //     case [SymbolV(symb), form, StringV(doc)]: {
+  //       var val = eval( env, form );
+  //       env.bind( symb, val );
+  //       return val;
+  //     }
+  //     default: throw 'malformed define statement';
+  //     };
+  // }
+  
   
   private static function isLetBindings ( bindings : HatchValue) : (Bool)
   {
@@ -134,10 +158,21 @@ class Evaluator {
     return params.length > 0 && params[params.length -1] == 'rest&' && params.length <= args.length;
   }
 
-  private static function restArgs ( args : Array<HatchValue>, i : Int) : Array<HatchValue>
+  private static function restArgs ( args0 : Array<HatchValue>, params : Array<String>) : Array<HatchValue>
   {
-    var newArgs = args.slice(0, i);
-    newArgs.push( ListV( args.slice(i) ) );
+    var args = args0.copy();
+    var newArgs = [];
+    for (p in params)
+      {
+        if (p == 'rest&')
+          {
+            newArgs.push(ListV(args));
+          }
+        else
+          {
+            newArgs.push( args.shift() );
+          }
+      }
     return newArgs;
   }
   
@@ -146,13 +181,13 @@ class Evaluator {
     return switch (v)
       {
       case PrimOpV(op): op( args );
+
+      case FunctionV( params, body, env) if (validRestArgs( params, args )):
+        callFunction( env, params, restArgs( args, params ), body);
         
       case FunctionV( params, body, env ) if (params.length == args.length):
         callFunction( env, params, args, body );
         
-      case FunctionV( params, body, env) if (validRestArgs( params, args )):
-        callFunction( env, params, restArgs( args, params.length), body);
-
       case FunctionV( params, body, env) if (params.length > args.length):
         makePartial( env, params, args, body);
         

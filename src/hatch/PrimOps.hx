@@ -48,6 +48,47 @@ class PrimOps
     throw "cannot perform division operation on supplied arguments";
   }
 
+  public static function head (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [ListV( vals )] if (vals.length > 0): vals[0];
+      default: throw "cannot take head of nonlist or empty list or more than one argument";
+      }
+  }
+  
+  public static function tail (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [ListV( vals )] if (vals.length > 0): ListV(vals.slice(1));
+      default: throw  "cannot take tail of nonlist or empty list or more than one argument";
+      }
+  }
+
+  public static function cons (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [hd, ListV(tl)]: {
+        var newList = tl.slice(0);
+        newList.unshift(hd);
+        return ListV( newList );
+      }
+      default: throw "malformed cons call";
+      }
+  }
+
+  public static function isEmpty (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [ListV([])] : BoolV(true);
+      case [ListV(_)]: BoolV(false);
+      default: throw "cannot check if a non-list is empty";
+      }
+  }
+  
   // public static function mod (args : Array<HatchValue>) : (HatchValue)
   // {
     
