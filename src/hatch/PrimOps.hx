@@ -9,6 +9,28 @@ class PrimOps
 {
 
 
+  public static function length (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [ListV(a)]: IntV(a.length);
+      case [StringV(s)]: IntV(s.length);
+      default: throw "improper arguments in call to length";
+      }
+  }
+
+  public static function atIndex (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [IntV(n), ListV(a)] if (n < a.length): a[n];
+      case [IntV(n), StringV(s)] if (n < s.length): StringV(s.charAt(n));
+      case [_, v] if (v.isList() or v.isString()):
+        throw "error: attempted to de index out of sequence bounds";
+      default: throw "de index operator called with bad arguments";
+      }
+  }
+
   public static function add (args : Array<HatchValue>) : (HatchValue)
   {
     if ( args.length == 2 || args.foreach( HatchValueUtil.isNumeric) )
@@ -89,11 +111,32 @@ class PrimOps
       }
   }
   
-  // public static function mod (args : Array<HatchValue>) : (HatchValue)
-  // {
-    
-  // }
+  public static function mod (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [IntV(i), IntV(j)]: IntV(i % j);
+      default: throw "cannot perform modulo calculation with provided arguments";
+      }
+  }
 
+  public static function equal (args: Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [v1, v2]: BoolV( HatchValueUtil.equal( v1, v2 ));
+      default: throw "malformed equality check";
+      }
+  }
+
+  public static function apply (args: Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [val, ListV(arguments)]: Evaluator.apply( val, arguments );
+      default: throw "malfomred apply expression";
+      }
+  }
 
   // public static function sin (args : Array<HatchValue>) : (HatchValue)
   // {

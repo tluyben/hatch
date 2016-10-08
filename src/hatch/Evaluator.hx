@@ -13,14 +13,21 @@ class Evaluator {
     if (prelude == null) {
       prelude = new HatchEnv();
 
+
+      prelude.bind('length', wrapPrimOp(1, PrimOps.length));
+      prelude.bind('[]', wrapPrimOp(2, PrimOps.atIndex));
       prelude.bind('+', wrapPrimOp(2, PrimOps.add));
       prelude.bind('-', wrapPrimOp(2, PrimOps.sub));
       prelude.bind('*', wrapPrimOp(2, PrimOps.mul));
       prelude.bind('/', wrapPrimOp(2, PrimOps.div));
+      prelude.bind('%', wrapPrimOp(2, PrimOps.mod));
+      prelude.bind('=', wrapPrimOp(2, PrimOps.equal));
       prelude.bind('head', wrapPrimOp(1, PrimOps.head));
       prelude.bind('tail', wrapPrimOp(1, PrimOps.tail));
       prelude.bind('cons', wrapPrimOp(2, PrimOps.cons));
       prelude.bind('empty?', wrapPrimOp(1, PrimOps.isEmpty));
+      prelude.bind('apply', wrapPrimOp(2, PrimOps.apply));
+
       
     }
   }
@@ -176,7 +183,7 @@ class Evaluator {
     return newArgs;
   }
   
-  private static function apply (v : HatchValue , args : Array<HatchValue>) : (HatchValue)
+  public static function apply (v : HatchValue , args : Array<HatchValue>) : (HatchValue)
   {
     return switch (v)
       {
