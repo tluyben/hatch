@@ -28,7 +28,6 @@ class Evaluator {
       prelude.bind('empty?', wrapPrimOp(1, PrimOps.isEmpty));
       prelude.bind('apply', wrapPrimOp(2, PrimOps.apply));
       prelude.bind('concat', wrapPrimOp(2, PrimOps.concat));
-      
     }
   }
 
@@ -66,15 +65,12 @@ class Evaluator {
 
       case SymbolV('let') if (vs.length == 3): evalLet( env, vs.slice( 1 ));
 
-        //      case SymbolV('define'): evalDefine( env, vs.slice( 1 ));
-        
       case PrimOpV(_): apply( head, [ for (v in vs.slice(1)) eval( env , v )]);
 
       case FunctionV(_,_,_): apply( head, [for (v in vs.slice(1)) eval( env, v)]);
 
       default: apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
-        
-      }
+      };
   }
 
   // private static function evalDefine ( env : HatchEnv, forms : Array<HatchValue> ) : (HatchValue)
@@ -157,7 +153,7 @@ class Evaluator {
       {
       case BoolV(true): eval( env, forms[1]);
       case BoolV(false): eval( env, forms[2]);
-      default: throw "Error: malformed if form: (if bool then-form else-form)";
+      default: throw "Error: malformed if form";
       };
   }
 
@@ -186,25 +182,27 @@ class Evaluator {
 
   private static function validPartial( params : Array<String>, args : Array<HatchValue>) : (Bool)
   {
-    return params.length > args.length || args.exists( HatchValueUtil.isBlank );
+    var hasBlanks = args.exists( HatchValueUtil.isBlank );
+    // HERE!
+    return params.length > args.length || (hasBlanks && params.length >= args.length);
   }    
   
   public static function apply (v : HatchValue , args : Array<HatchValue>) : (HatchValue)
   {
     return switch (v)
       {
-      case PrimOpV(op): op( args );
+      case PrimOpV(op):  op( args );
 
-      case FunctionV( params, body, env) if (validRestArgs( params, args )):
-        callFunction( env, params, restArgs( args, params ), body);
+      case FunctionV( params, body, env) if (validRestArgs( params, args )): 
+          callFunction( env, params, restArgs( args, params ), body);
 
-      case FunctionV( params, body, env) if (validPartial( params, args)): //params.length >= args.length):
-        makePartial( env, params, args, body);
+      case FunctionV( params, body, env) if (validPartial( params, args)):
+          makePartial( env, params, args, body);
         
-      case FunctionV( params, body, env ) if (params.length == args.length):
-        callFunction( env, params, args, body );
+      case FunctionV( params, body, env ) if (params.length == args.length): 
+          callFunction( env, params, args, body );
         
-      default: throw 'Error, cannot apply $v to supplied arguments';
+      default: throw 'Error, cannot apply form to supplied arguments';
       }
   }
 

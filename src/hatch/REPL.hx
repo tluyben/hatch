@@ -7,6 +7,7 @@ import haxe.ds.StringMap;
 
 import hatch.Reader;
 import hatch.Evaluator;
+import hatch.HatchValue.HatchValue;
 
 using hatch.HatchValueUtil;
 
@@ -83,19 +84,24 @@ class REPL {
   public static function repl( s : String) : (String) {
     switch (Reader.read( s )) {
     case Left(e): return 'READ ERROR $e';
+    case Right(ListV([SymbolV('quit')])): {
+      running = false;
+      return '\nGOOD BYE!\n';
+    }
     case Right(v): try {
         return Evaluator.eval( Evaluator.prelude, v ).show();
       } catch (e:Dynamic) {
-        return 'EVAL ERROR for $v,  $e';
+        return 'EVAL ERROR for ${v.show()},  $e';
       }
     }
   }
-  
+
+  private static var running : Bool = true;
   // the repl does nothing on non-sys plaforms
   private static function start () {
 #if sys
     Sys.stdout().writeString('$HEADER\nVersion $VERSION\n');
-    while (true) {
+    while (running) {
       Sys.stdout().writeString("\n> ");
       Sys.stdout().flush();
       var input = Sys.stdin().readLine();
