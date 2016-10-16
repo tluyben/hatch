@@ -85,13 +85,23 @@ class Reader {
 			      boolP,
 			      symbolP,
 			      ]);
-      
-      //      listP = P.nested( openP, closeP, P.spaceBracket(atomicP), consing);
-      listP = P.nested( openP, closeP, P.bracket(whitespaceP, atomicP, whitespaceP), consing);      
-      //      termP = P.spaceBracket(atomicP.or(listP));
-      termP = P.bracket( whitespaceP, atomicP.or( listP ), whitespaceP );
 
-      //      exprsP = P.bracket(whitespaceP, termP, whitespaceP).many1();
+      var quoted = function (p : Parser<HatchValue>) {
+	return P.string("'").then(p).fmap(function (parsed) {
+	    return ListV([SymbolV('quote'), parsed]);
+	  });
+      };      
+
+      listP = P.nested( openP, closeP, P.bracket(whitespaceP,
+						 quoted(atomicP).or(atomicP)
+						 , whitespaceP),
+			consing);      
+
+      var rawTermP = P.bracket( whitespaceP, atomicP.or( listP ), whitespaceP );
+      termP = quoted(rawTermP).or(rawTermP);
+      //      termP = P.bracket( whitespaceP, atomicP.or( listP ), whitespaceP );
+
+
     }
   }
 
