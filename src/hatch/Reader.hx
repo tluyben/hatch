@@ -96,8 +96,12 @@ class Reader {
 						 quoted(atomicP).or(atomicP)
 						 , whitespaceP),
 			consing);      
-
-      var rawTermP = P.bracket( whitespaceP, atomicP.or( listP ), whitespaceP );
+      var listP2 = P.nested( openP, closeP, P.bracket(whitespaceP,
+						      quoted(listP).or(listP).or(quoted(atomicP)).or(atomicP),
+						      whitespaceP),
+			     consing);
+      
+      var rawTermP = P.bracket( whitespaceP, atomicP.or(listP2).or(listP), whitespaceP );
       termP = quoted(rawTermP).or(rawTermP);
       //      termP = P.bracket( whitespaceP, atomicP.or( listP ), whitespaceP );
 
