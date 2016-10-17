@@ -88,23 +88,32 @@ class HaxeEnv
   
   public static function resolveHaxeReference ( symbol : String , ?ctx : Dynamic = null) : (HaxeResolved)
   {
-    if (isTypeName( symbol ))
+    if (isTypeName( symbol )) // sigh, this might also be a classAttribPath
       {
-        return resolveTypePath( symbol );
+	trace('$symbol isTypeName');
+	try {
+	  return resolveTypePath( symbol );
+	} catch (e:Dynamic) {
+	  return resolveClassAttribReference( symbol );
+	}
       }
     else if (isClassAttributePath( symbol ))
       {
+	trace('$symbol isClassAttributePath');
+
         return resolveClassAttribReference( symbol );
       }
     else if (isObjectAttributePath( symbol ))
       {
+	trace('$symbol isObjectAttributePath');
         return resolveObjectAttributePath( symbol , ctx);
       }
     else  if ( isValidVariable( symbol) )
       {
+	trace('$symbol isValidVariable');
         return UserSetValue( table.get( symbol ) );
       }
-
+    else
       {
         throw 'invalid Haxe reference: $symbol';
       }
@@ -112,31 +121,24 @@ class HaxeEnv
   
   private static function resolveTypePath ( path : String ) : (Dynamic)
   {
-    if (table.exists( path ))
+    var cl = Type.resolveClass( path );
+    if (cl != null)
       {
-        return table.get( path );
+	table.set( path, ResolvedClassInstantiation(cl));
+	return ResolvedClassInstantiation( cl );
       }
     else
       {
-        var cl = Type.resolveClass( path );
-        if (cl != null)
-          {
-            table.set( path, ResolvedClassInstantiation(cl));
-            return ResolvedClassInstantiation( cl );
-          }
-        else
-          {
-            // var en = Type.resolveEnum( path );
-            // if ( en != null )
-            //   {
-            //     table.set( path, cl);
-            //     return cl;
-            //   }
-            // else
-            //   {
-	    throw 'Cannot resolve symbol $path';
-		//              }
-          }
+	// var en = Type.resolveEnum( path );
+	// if ( en != null )
+	//   {
+	//     table.set( path, cl);
+	//     return cl;
+	//   }
+	// else
+	//   {
+	throw 'Cannot resolve symbol $path';
+	//              }
       }
   } 
   
