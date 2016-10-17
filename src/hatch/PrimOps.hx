@@ -150,7 +150,6 @@ class PrimOps
 
   public static function dot (args : Array<HatchValue>) : (HatchValue)
   {
-    trace(args);
     return switch (args)
       {
       case [SymbolV(haxeRef), ListV(vals)]:
@@ -194,7 +193,6 @@ class PrimOps
       };
   }
 
-
   public static function dotBind (args : Array<HatchValue>) : (HatchValue)
   {
     // bind :: m a -> (a -> m b) -> m b
@@ -221,13 +219,23 @@ class PrimOps
 
   public static function runHaxe (args : Array<HatchValue>) : (HatchValue)
   {
-    trace(args);
     return switch (args)
       {
       case [HaxeOpV(op)]: op();
       default: throw "run-haxe must be called with an Haxe operation";
       }
   }
+
+  public static function getNth (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [IntV(i), ListV(l)] if (i < l.length): l[i];
+      case [IntV(_), ListV(_)]: throw 'indiex out of range';
+      default: throw 'nth called with improper arguments';
+      };
+  }
+
 }
 
 

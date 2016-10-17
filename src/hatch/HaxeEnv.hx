@@ -103,7 +103,7 @@ class HaxeEnv
 
         return resolveClassAttribReference( symbol );
       }
-    else if (isObjectAttributePath( symbol ))
+    else if (isObjectAttributePath( symbol ) || (ctx != null && isValidVariable( symbol )))
       {
 	trace('$symbol isObjectAttributePath');
         return resolveObjectAttributePath( symbol , ctx);
