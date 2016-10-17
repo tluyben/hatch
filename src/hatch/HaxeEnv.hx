@@ -5,7 +5,8 @@ import haxe.ds.Either;
 using Lambda;
 
 enum HaxeResolved {
-  ResolvedValue(v : Dynamic);
+  ResolvedObjectAttrib(o:Dynamic, attrib: String, v:Dynamic);
+  UserSetValue(v : Dynamic);
   ResolvedMethodCall(ob : Dynamic, method : Dynamic);
   ResolvedClassInstantiation(cl: Class<Dynamic>);
   //  ResolvedEnumInstantiation(en:
@@ -14,9 +15,6 @@ enum HaxeResolved {
 class HaxeEnv
 {
 
-
-
-  
   private static var table : Map<String,Dynamic>;
 
   public static function init () {
@@ -82,13 +80,13 @@ class HaxeEnv
   {
     if (objectAttributePathRegex == null)
       {
-	objectAttributePath = '($variableRegexString\\.)+$variableRegexString';
+	objectAttributePath = '($variableRegexString\\.)*$variableRegexString';
 	objectAttributePathRegex = new EReg( "^" + objectAttributePath + "$", '');
       }
     return objectAttributePathRegex.match( p );
   }
   
-  public static function resolveHaxeReference ( symbol : String ) : (HaxeResolved)
+  public static function resolveHaxeReference ( symbol : String , ?ctx : Dynamic = null) : (HaxeResolved)
   {
     if (isTypeName( symbol ))
       {
@@ -100,11 +98,11 @@ class HaxeEnv
       }
     else if (isObjectAttributePath( symbol ))
       {
-        return resolveObjectAttributePath( symbol );
+        return resolveObjectAttributePath( symbol , ctx);
       }
     else  if ( isValidVariable( symbol) )
       {
-        return ResolvedValue( table.get( symbol ) );
+        return UserSetValue( table.get( symbol ) );
       }
 
       {
@@ -146,18 +144,22 @@ class HaxeEnv
   {
     return switch (Type.typeof( o ))
       {
-      case TObject if (Type.getClass( o ) == null): Reflect.fields( o );
-      case TObject: Type.getInstanceFields( o );
-      case TClass(_): {
-        var fields = Type.getClassFields( o );
-        var o = Type.getSuperClass( o );
-        while (o != null)
-          {
-            fields = fields.concat( Type.getClassFields( o ));
-            o = Type.getSuperClass( o );
-          }
-        fields;
-      }
+      case TObject:
+	{
+	  var fields = Reflect.fields( o );
+	  if (fields.length == 0)
+	    {
+	      fields = Type.getClassFields( o );
+	      o = Type.getSuperClass( o );
+	      while (o != null)
+		{
+		  fields = fields.concat( Type.getClassFields(o));
+		  o = Type.getSuperClass( o );
+		}
+	    }
+	  return fields;
+	}
+      case TClass(cl): Type.getInstanceFields(cl);
       default: [];
       };
   }
@@ -174,9 +176,10 @@ class HaxeEnv
     // resolveTypePath throws error if type doesn't resolve.
     var target : Dynamic = unpackClass(resolveTypePath( typeParts.join('.') ));
     var attrib : Dynamic = target;
+    var attribute : String = ''; // this... seems wrong.
     while ( parts.length > 0 )
       {
-        var attribute = parts.shift();
+	attribute = parts.shift();
 	target = attrib;
         if ( getFields( target ).has( attribute ))
           {
@@ -190,22 +193,23 @@ class HaxeEnv
     return switch (Type.typeof( attrib ))
       {
       case TFunction: ResolvedMethodCall( target, attrib );
-      default: ResolvedValue( attrib );
+      default: ResolvedObjectAttrib(target, attribute, attrib );
       };
   }        
 
-  private static function resolveObjectAttributePath ( path : String ) : (Dynamic)
+  private static function resolveObjectAttributePath ( path : String , ?ctx = null) : (Dynamic)
   {
     var parts = path.split('.');
-    var attribute = parts.shift();
-    var target : Dynamic = table.get( attribute );
+    var target : Dynamic = if (ctx == null) table.get( parts.shift() ) else ctx;
     var attrib : Dynamic = target;
+    var attribute = ''; // feels wrong, was :parts.shift();
+
     if (target != null)
       {
 	while (parts.length > 0)
 	  {
 	    attribute = parts.shift();
-	    attrib = target;
+	    target = attrib;
 	    if ( getFields( target ).has( attribute ) )
 	      {
 		attrib = Reflect.field( target, attribute );
@@ -218,7 +222,7 @@ class HaxeEnv
 	return switch (Type.typeof( attrib ))
 	  {
 	  case TFunction: ResolvedMethodCall(target, attrib);
-	  default: ResolvedValue( attrib );
+	  default: ResolvedObjectAttrib( target, attribute, attrib );
 	  };
       }
     else
@@ -228,17 +232,27 @@ class HaxeEnv
   }
 
 
-  public static function evaluate( symbol : String, args : Array<Dynamic>) : (Dynamic)
+  public static function evaluate( symbol : String, args : Array<Dynamic>, ?context = null) : (Dynamic)
   {
-    return switch (resolveHaxeReference( symbol ) )
+    trace( symbol, args, context);
+    return switch (resolveHaxeReference( symbol , context) )
       {
-      case ResolvedValue(v): v;
+      case UserSetValue(v): v;
       case ResolvedMethodCall(t,m): Reflect.callMethod( t, m, args);
       case ResolvedClassInstantiation(c): Type.createInstance(c, args);
+      case ResolvedObjectAttrib(o,_,v): v;
       }
   }
 
-
+  public static function setSymbol (symbol : String, val : Dynamic) : (Void)
+  {
+    switch (resolveHaxeReference( symbol ))
+      {
+      case ResolvedObjectAttrib(o,a,_): Reflect.setField(o, a, val);
+      case UserSetValue(_): table.set(symbol, val);
+      default: throw 'cannot set symbol $symbol';
+      }	      
+  }
 
   public static function main ()
   {

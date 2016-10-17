@@ -30,6 +30,7 @@ class Evaluator {
       prelude.bind('.', wrapPrimOp(2, PrimOps.dot));
       prelude.bind('bind.', wrapPrimOp(2, PrimOps.dotBind));
       prelude.bind('run-haxe', wrapPrimOp(1, PrimOps.runHaxe));
+      prelude.bind('.=', wrapPrimOp(2, PrimOps.dotSet));
     }
   }
 

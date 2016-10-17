@@ -133,6 +133,7 @@ class HatchValueUtil
     case BoolV(b):b;
     case ListV(a): a.map( toHaxe );
     case HaxeV(d): d;
+    case StringV(s) : s;
     default: null;              // no support (yet) for demarshalling functionals 
     }
   }

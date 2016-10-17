@@ -12,7 +12,7 @@ class Prelude {
      {name: 'reverse', form: '(foldr cons ())'},
      {name: 'map', form: '(-> (f l) (if (empty? l) () (cons (f (head l)) (map f (tail l)))))'},
      {name: '<>', form: '(-> (f g) (-> (x) (f (g x))))'},
-     {name: '>>', form: '(-> (a rest&) (foldr (-> (f acc) (f acc)) a rest&))'},
+     {name: '$>', form: '(-> (a rest&) (foldr (-> (f acc) (f acc)) a rest&))'},
      {name: 'filter', form: '(-> (p l) (reverse (foldr (-> (v acc) (if (p v) (cons v acc) acc)) () l)))'},
      {name: 'some?', form: '(-> (p l) (if (empty? l) #f (if (p (head l)) #t (some? p (tail l)))))'},
      {name: 'all?', form: '(-> (p l) (not (some? (<> not p) l)))'},
@@ -23,7 +23,8 @@ class Prelude {
      {name: 'zip', form: '(-> (rest&) (if (or (empty? rest&) (some? empty? rest&)) () 
                                           (cons (map head rest&) (apply zip (map tail rest&)))))'},
      {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'},
-     {name: '.>>', form: '(-> (op rest&) (foldl bind. op rest&))'}
+     {name: '.>>', form: '(-> (op rest&) (foldl bind. op rest&))'},
+     {name: '..', form: '(-> (symbol) (. symbol ()))'}
      ];
 
 }

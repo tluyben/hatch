@@ -150,6 +150,7 @@ class PrimOps
 
   public static function dot (args : Array<HatchValue>) : (HatchValue)
   {
+    trace(args);
     return switch (args)
       {
       case [SymbolV(haxeRef), ListV(vals)]:
@@ -161,7 +162,35 @@ class PrimOps
 	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
 	    }
 	  });
+      case [ context, ListV(vals)] if ( vals.length >= 1 && HatchValueUtil.isSymbol(vals[0])):
+	HaxeOpV(function () {
+	    try {
+	      var evaluated = HaxeEnv.evaluate( vals[0].toHaxe(),
+						vals.slice(1).map(HatchValueUtil.toHaxe),
+						context.toHaxe());
+	      return ListV([SymbolV('ok'), HatchValueUtil.fromHaxe( evaluated )]);	  
+	    } catch (e:Dynamic) {
+	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	    }
+	  });
       default: throw "the . primitive called with malformed arguments";
+      };
+  }
+
+  public static function dotSet (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [SymbolV(haxeRef), v]:
+	HaxeOpV(function () {
+	    try {
+	      HaxeEnv.setSymbol(haxeRef, v.toHaxe());
+	      return ListV([SymbolV('ok'), args[0]]);
+	    } catch (e:Dynamic) {
+	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	    }
+	  });	    
+      default: throw ' the .= primitive called with malformed arguments';
       };
   }
 
@@ -178,7 +207,11 @@ class PrimOps
 	    return switch ( res )
 	      {
 	      case ListV([SymbolV('fail'), _]): res;
-	      case ListV([SymbolV('ok'), val]): Evaluator.apply( args[1], [val]);
+	      case ListV([SymbolV('ok'), val]): switch (Evaluator.apply( args[1], [val]))
+		  {
+		  case HaxeOpV(op2): op2();
+		  default: throw "second argument to monadic bind did not return a haxe operation";
+		  }
 	      default: throw "monadic bind called with bad arguments";
 	      }
 	  });
@@ -188,6 +221,7 @@ class PrimOps
 
   public static function runHaxe (args : Array<HatchValue>) : (HatchValue)
   {
+    trace(args);
     return switch (args)
       {
       case [HaxeOpV(op)]: op();
