@@ -12,6 +12,11 @@ class HatchEnv {
     table = new Map();
     parent = null;
   }
+
+  public function defined (s : String) : (Bool)
+  {
+    return table.exists( s );
+  }
   
   public function lookup ( s : String) : (HatchValue)
   {

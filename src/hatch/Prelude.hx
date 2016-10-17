@@ -25,6 +25,7 @@ class Prelude {
      {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'},
      {name: '.>>', form: '(-> (op rest&) (foldl bind. op rest&))'},
      {name: '..', form: '(-> (symbol) (. symbol ()))'}
+     
      ];
 
 }

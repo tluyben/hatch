@@ -67,6 +67,8 @@ class Evaluator {
 
       case SymbolV('let') if (vs.length == 3): evalLet( env, vs.slice( 1 ));
 
+      case SymbolV('define') if (vs.length == 4 || vs.length == 3): evalDefine( env, vs.slice( 1 ));
+	
       case PrimOpV(_): apply( head, [ for (v in vs.slice(1)) eval( env , v )]);
 
       case FunctionV(_,_,_): apply( head, [for (v in vs.slice(1)) eval( env, v)]);
@@ -74,6 +76,7 @@ class Evaluator {
       default: apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
       };
   }
+
 
   private static function isLetBindings ( bindings : HatchValue) : (Bool)
   {
@@ -138,6 +141,20 @@ class Evaluator {
       case BoolV(false): eval( env, forms[2]);
       default: throw "Error: malformed if form";
       };
+  }
+
+  private static function evalDefine (env : HatchEnv, forms : Array<HatchValue>)
+  {
+    return switch (forms[0])
+      {
+      case SymbolV(s) if (env.defined(s)): throw 'cannot redefine symbol ${forms[0]} in current context';
+      case SymbolV(s):
+	{
+	  env.bind(s, eval(env, forms[1]));
+	  forms[0];
+	}
+      default: throw 'define takes a symbolic first argument';
+      }
   }
 
   private static function validRestArgs ( params: Array<String>, args : Array<HatchValue> ) : (Bool)

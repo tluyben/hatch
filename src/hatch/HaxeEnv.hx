@@ -80,7 +80,7 @@ class HaxeEnv
   {
     if (objectAttributePathRegex == null)
       {
-	objectAttributePath = '($variableRegexString\\.)*$variableRegexString';
+	objectAttributePath = '($variableRegexString\\.)+$variableRegexString';
 	objectAttributePathRegex = new EReg( "^" + objectAttributePath + "$", '');
       }
     return objectAttributePathRegex.match( p );
