@@ -148,6 +148,52 @@ class PrimOps
       }
   }
 
-  
-  
+  public static function dot (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [SymbolV(haxeRef), ListV(vals)]:
+	HaxeOpV(function () {
+	    try {
+	      var evaluated = HaxeEnv.evaluate( haxeRef, vals.map(HatchValueUtil.toHaxe ));
+	      return ListV([SymbolV('ok'), HatchValueUtil.fromHaxe( evaluated )]);	  
+	    } catch ( e:Dynamic ) {
+	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	    }
+	  });
+      default: throw "the . primitive called with malformed arguments";
+      };
+  }
+
+
+  public static function dotBind (args : Array<HatchValue>) : (HatchValue)
+  {
+    // bind :: m a -> (a -> m b) -> m b
+    // (.>> op f) ;; op2
+    return switch (args)
+      {
+      case [HaxeOpV(op), FunctionV(_,_,_)]:
+	HaxeOpV(function () {
+	    var res = op();
+	    return switch ( res )
+	      {
+	      case ListV([SymbolV('fail'), _]): res;
+	      case ListV([SymbolV('ok'), val]): Evaluator.apply( args[1], [val]);
+	      default: throw "monadic bind called with bad arguments";
+	      }
+	  });
+      default: throw "monadic bind called with bad arguments";
+      };
+  }
+
+  public static function runHaxe (args : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (args)
+      {
+      case [HaxeOpV(op)]: op();
+      default: throw "run-haxe must be called with an Haxe operation";
+      }
+  }
 }
+
+

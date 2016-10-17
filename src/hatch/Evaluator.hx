@@ -13,7 +13,6 @@ class Evaluator {
     if (prelude == null) {
       prelude = new HatchEnv();
 
-
       prelude.bind('length', wrapPrimOp(1, PrimOps.length));
       prelude.bind('[]', wrapPrimOp(2, PrimOps.atIndex));
       prelude.bind('+', wrapPrimOp(2, PrimOps.add));
@@ -28,9 +27,11 @@ class Evaluator {
       prelude.bind('empty?', wrapPrimOp(1, PrimOps.isEmpty));
       prelude.bind('apply', wrapPrimOp(2, PrimOps.apply));
       prelude.bind('concat', wrapPrimOp(2, PrimOps.concat));
+      prelude.bind('.', wrapPrimOp(2, PrimOps.dot));
+      prelude.bind('bind.', wrapPrimOp(2, PrimOps.dotBind));
+      prelude.bind('run-haxe', wrapPrimOp(1, PrimOps.runHaxe));
     }
   }
-
 
   private static function wrapPrimOp ( numArgs : Int, op : Array<HatchValue> -> HatchValue) : (HatchValue)
   {
@@ -73,25 +74,6 @@ class Evaluator {
       };
   }
 
-  // private static function evalDefine ( env : HatchEnv, forms : Array<HatchValue> ) : (HatchValue)
-  // {
-  //   return switch( forms )
-  //     {
-  //     case [SymbolV(symb), form]: {
-  //       var val = eval( env, form );
-  //       env.bind( symb, val );
-  //       return val;
-  //     }
-  //     case [SymbolV(symb), form, StringV(doc)]: {
-  //       var val = eval( env, form );
-  //       env.bind( symb, val );
-  //       return val;
-  //     }
-  //     default: throw 'malformed define statement';
-  //     };
-  // }
-  
-  
   private static function isLetBindings ( bindings : HatchValue) : (Bool)
   {
     // ListV([ ListV([ SymbolV(v1), f1]), ListV([ SymbolV(v2), f2]), ...])
@@ -183,7 +165,6 @@ class Evaluator {
   private static function validPartial( params : Array<String>, args : Array<HatchValue>) : (Bool)
   {
     var hasBlanks = args.exists( HatchValueUtil.isBlank );
-    // HERE!
     return params.length > args.length || (hasBlanks && params.length >= args.length);
   }    
   

@@ -38,6 +38,7 @@ class REPL {
     histIndex = 0;
     inProgress = '';
     Reader.init();
+    HaxeEnv.init();
     Evaluator.init();
     loadPrelude();
   }

@@ -22,7 +22,8 @@ class Prelude {
      {name: 'odd?', form: '(<> not even?)'},
      {name: 'zip', form: '(-> (rest&) (if (or (empty? rest&) (some? empty? rest&)) () 
                                           (cons (map head rest&) (apply zip (map tail rest&)))))'},
-     {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'}
-       ];
+     {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'},
+     {name: '.>>', form: '(-> (op rest&) (foldl bind. op rest&))'}
+     ];
 
 }

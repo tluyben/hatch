@@ -2,8 +2,9 @@ package hatch;
 
 import hatch.HatchValue.HatchValue;
 
-class HatchValueUtil {
-
+class HatchValueUtil
+{
+  
   public static function equal( v1 : HatchValue, v2 : HatchValue) : (Bool) {
     switch ([v1,v2]) {
     case [ListV(a1), ListV(a2)] if (a1.length == a2.length):
@@ -95,7 +96,6 @@ class HatchValueUtil {
       }
   }
 
-  
   public static function listContents ( v : HatchValue) : Array<HatchValue>
   {
     return switch (v) {
@@ -120,13 +120,7 @@ class HatchValueUtil {
       case TInt: IntV(v);
       case TFloat: FloatV(v);
       case TBool: BoolV(v);
-      case TFunction: PrimOpV(function ( args ) {
-          return fromHaxe( Reflect.callMethod( null, v, args.map( toHaxe )));
-        });
-      default:
-        if (Std.is( v, String)) StringV(v)
-          else if (Std.is(v, Array)) ListV( v.map( fromHaxe ))
-            else throw 'unsupported haxe type';
+      default: if (Std.is( v, String)) StringV(v) else HaxeV( v );
       }
   }
   
@@ -138,6 +132,7 @@ class HatchValueUtil {
     case FloatV(f):f;
     case BoolV(b):b;
     case ListV(a): a.map( toHaxe );
+    case HaxeV(d): d;
     default: null;              // no support (yet) for demarshalling functionals 
     }
   }
@@ -154,6 +149,8 @@ class HatchValueUtil {
       case ListV(a): '(${a.map( show ).join(' ')})';
       case PrimOpV(_): "#<PrimOp>#";
       case FunctionV(params,_,_): '#<function ${params.length}>#';
+      case HaxeOpV(_): '#<Haxe operation>';
+      case HaxeV(d): 'Haxe{$d}';
       };
   }
   

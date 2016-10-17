@@ -1,6 +1,5 @@
 package hatch;
 
-
 enum HatchValue {
   SymbolV(a : String);
   ListV(l : Array<HatchValue>);
@@ -12,5 +11,7 @@ enum HatchValue {
              body : HatchValue,
              env : HatchEnv);
   PrimOpV( op : Array<HatchValue> -> HatchValue);
+  HaxeV( v : Dynamic);
+  HaxeOpV( op : Void -> HatchValue); 
 }
 
