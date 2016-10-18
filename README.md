@@ -43,6 +43,8 @@ At this point, you can do lisp stuff. See the
 [manual](not-yet-written) for more info, but here is a copy-and-pasted
 shell session:
 
+**NOTE: THIS IS OUT OF DATE, HATCH IS UNDER CONSTRUCTION**
+
 ``` scheme
 ;;  _           _       _        __     __ 
 ;; | |__   __ _| |_ ___| |__    / /     \ \ 
