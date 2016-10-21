@@ -61,7 +61,12 @@ class Evaluator {
 
     return switch (head)
       {
+	// here, eval behaves like a function - it evaluates its evaluated argument. Is this right?
+      case SymbolV('eval') if (vs.length == 2): eval(env,  eval(env, vs[1]));
+
       case SymbolV('quote'): vs[1];
+
+      case SymbolV('macro') if (vs.length == 3): evalMacro( env, vs.slice( 1 ));
 
       case SymbolV('if') if( vs.length == 4): evalIf( env, vs.slice( 1 ) );
 
@@ -75,7 +80,12 @@ class Evaluator {
 
       case FunctionV(_,_,_): apply( head, [for (v in vs.slice(1)) eval( env, v)]);
 
-      default: apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
+      case MacroV(_,_,_): apply( head, vs.slice(1));
+	
+      case SymbolV(s): evalList( env, [ eval(env, head) ].concat( vs.slice(1)));
+
+      default: throw 'eval error, unknown expression pattern';
+	//apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
       };
   }
 
@@ -122,6 +132,16 @@ class Evaluator {
   private static function unpackSymbols ( a : Array<HatchValue> ) : Array<String>
   {
     return a.map( HatchValueUtil.symbolString );
+  }
+
+  private static function evalMacro (env : HatchEnv, forms : Array<HatchValue>) : (HatchValue)
+  {
+    return switch (forms)
+      {
+      case [ListV( params ), body] if (params.foreach( HatchValueUtil.isSymbol)):
+	  MacroV( unpackSymbols( params), body, env);
+      default: throw 'Malformed macro expression';
+      };
   }
   
   private static function evalLambda ( env : HatchEnv, forms : Array<HatchValue> ) : (HatchValue)
@@ -193,15 +213,21 @@ class Evaluator {
     return switch (v)
       {
       case PrimOpV(op):  op( args );
-
+	
       case FunctionV( params, body, env) if (validRestArgs( params, args )): 
-          callFunction( env, params, restArgs( args, params ), body);
-
+	callFunction( env, params, restArgs( args, params ), body);
+	
       case FunctionV( params, body, env) if (validPartial( params, args)):
-          makePartial( env, params, args, body);
+	makePartial( env, params, args, body);
         
       case FunctionV( params, body, env ) if (params.length == args.length): 
-          callFunction( env, params, args, body );
+	callFunction( env, params, args, body );
+
+      case MacroV(params, body, env) if (validRestArgs( params, args)):
+	callFunction(env, params, restArgs( args, params), body);
+	
+      case MacroV(params, body, env) if (params.length == args.length):
+	callFunction(env, params, args, body);
         
       default: throw 'Error, cannot apply form to supplied arguments';
       }

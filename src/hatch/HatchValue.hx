@@ -10,6 +10,9 @@ enum HatchValue {
   FunctionV( parameters : Array<String>,
              body : HatchValue,
              env : HatchEnv);
+  MacroV( parameters : Array<String>,
+	  body : HatchValue,
+	  env : HatchEnv);
   PrimOpV( op : Array<HatchValue> -> HatchValue);
   HaxeV( v : Dynamic);
   HaxeOpV( op : Void -> HatchValue); 

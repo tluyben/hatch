@@ -150,6 +150,7 @@ class HatchValueUtil
       case ListV(a): '(${a.map( show ).join(' ')})';
       case PrimOpV(_): "#<PrimOp>#";
       case FunctionV(params,_,_): '#<function ${params.length}>#';
+      case MacroV(params,_,_): '#<macro ${params.length}>#';
       case HaxeOpV(_): '#<Haxe operation>';
       case HaxeV(d): 'Haxe{$d}';
       };
