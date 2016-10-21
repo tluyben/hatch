@@ -32,6 +32,7 @@ class Evaluator {
       prelude.bind('run-haxe', wrapPrimOp(1, PrimOps.runHaxe));
       prelude.bind('.=', wrapPrimOp(2, PrimOps.dotSet));
       prelude.bind('nth', wrapPrimOp(2, PrimOps.getNth));
+      prelude.bind('haxe-object-literal', wrapPrimOp(1, PrimOps.makeObjectLiteral));
     }
   }
 

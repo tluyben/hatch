@@ -24,8 +24,8 @@ class Prelude {
                                           (cons (map head rest&) (apply zip (map tail rest&)))))'},
      {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'},
      {name: '.>>', form: '(-> (op rest&) (foldl bind. op rest&))'},
-     {name: '..', form: '(-> (symbol) (. symbol ()))'}
-     
+     {name: '..', form: '(-> (symbol) (. symbol ()))'},
+     {name: ':', form: '(-> (rest&) (haxe-object-literal rest&))'}
      ];
 
 }

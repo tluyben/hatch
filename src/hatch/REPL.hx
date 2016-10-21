@@ -1,6 +1,6 @@
 package hatch;
 
-#if neko
+#if sys
 import haxe.Http;
 import haxe.ds.StringMap;
 #end

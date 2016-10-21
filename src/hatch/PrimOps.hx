@@ -236,6 +236,51 @@ class PrimOps
       };
   }
 
+  private static function isAssocList (vals: Array<HatchValue>) : (Bool)
+  {
+    if (vals.length % 2 == 1)
+      {
+	return false;
+      }
+
+    var i = 0;
+    while ( i < vals.length && vals[i].isSymbol() )
+      {
+	i += 2;
+      }
+    return i == vals.length;
+  }
+
+  private static function makeAssocPairs (vals : Array<HatchValue>) : Array<{attrib:String,value:Dynamic}>
+  {
+    var a = [];
+    var i = 0;
+    while (i < vals.length)
+      {
+	a.push( {attrib: vals[i].toHaxe(), value: vals[i+1].toHaxe()});
+	i += 2;
+      }
+    return a;
+  }
+  
+  public static function makeObjectLiteral (args : Array<HatchValue>)
+  {
+    return switch (args)
+      {
+      case [ListV(vals)] if (isAssocList( vals )):
+	HaxeOpV(function () {
+	    var ob = {};
+	    var pairs = makeAssocPairs( vals );
+	    for (pair in pairs)
+	      {
+		Reflect.setField(ob, pair.attrib, pair.value);
+	      }
+	    return HaxeV(ob);
+	  });
+      default: throw "bad call to make object literal";
+      }
+  }
+
 }
 
 

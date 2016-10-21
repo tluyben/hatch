@@ -90,7 +90,6 @@ class HaxeEnv
   {
     if (isTypeName( symbol )) // sigh, this might also be a classAttribPath
       {
-	trace('$symbol isTypeName');
 	try {
 	  return resolveTypePath( symbol );
 	} catch (e:Dynamic) {
@@ -99,18 +98,14 @@ class HaxeEnv
       }
     else if (isClassAttributePath( symbol ))
       {
-	trace('$symbol isClassAttributePath');
-
         return resolveClassAttribReference( symbol );
       }
     else if (isObjectAttributePath( symbol ) || (ctx != null && isValidVariable( symbol )))
       {
-	trace('$symbol isObjectAttributePath');
         return resolveObjectAttributePath( symbol , ctx);
       }
     else  if ( isValidVariable( symbol) )
       {
-	trace('$symbol isValidVariable');
         return UserSetValue( table.get( symbol ) );
       }
     else
@@ -236,7 +231,6 @@ class HaxeEnv
 
   public static function evaluate( symbol : String, args : Array<Dynamic>, ?context = null) : (Dynamic)
   {
-    trace( symbol, args, context);
     return switch (resolveHaxeReference( symbol , context) )
       {
       case UserSetValue(v): v;

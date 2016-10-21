@@ -26,7 +26,7 @@ class Reader {
 
     if (termP == null) {
       // HELPER DEFINITIONS
-      var specialCharsP = P.oneOf("~@$[]%^&*+=-_?><./\\");
+      var specialCharsP = P.oneOf("~@$:[]%^&*+=-_?><./\\");
       var whitespaceP = P.oneOf(" \n\t\r").many().thento('');
       var notQuoteP = P.sat(function (s) {return s.charAt(0) != '"';});
       var openP = P.bracket(whitespaceP, P.char('('), whitespaceP);
