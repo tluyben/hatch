@@ -183,7 +183,7 @@ class Evaluator {
 
   private static function validRestArgs ( params: Array<String>, args : Array<HatchValue> ) : (Bool)
   {
-    return params.length > 0 && params[params.length -1] == 'rest&' && params.length <= args.length;
+    return params.length > 0 && params[params.length -1] == 'rest&' && (params.length - 1) <= args.length;
   }
 
   private static function restArgs ( args0 : Array<HatchValue>, params : Array<String>) : Array<HatchValue>

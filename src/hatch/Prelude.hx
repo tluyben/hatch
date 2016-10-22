@@ -31,8 +31,13 @@ class Prelude {
                                   (apply >>= 
                                          (cons (hx ()) 
                                                (map (-> (op) (-> (acc) (maphx (cons _ acc) op))) rest&))))'},
-     {name: '.>', form: 'hx'}
-
+     {name: '.>', form: 'hx'},
+     {name: 'quote+', form: '(macro (rest&) rest&)'},
+     {name: 'cond', form: '(macro (rest&) 
+                               (if (empty? rest&) #f
+                                   (if (eval (head (head rest&)))
+                                       (eval (nth 1 (head rest&)))
+                                       (apply cond (tail rest&)))))'}
      ];
 
 }
