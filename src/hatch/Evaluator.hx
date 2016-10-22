@@ -28,11 +28,13 @@ class Evaluator {
       prelude.bind('apply', wrapPrimOp(2, PrimOps.apply));
       prelude.bind('concat', wrapPrimOp(2, PrimOps.concat));
       prelude.bind('.', wrapPrimOp(2, PrimOps.dot));
-      prelude.bind('bind.', wrapPrimOp(2, PrimOps.dotBind));
+      prelude.bind('bindhx', wrapPrimOp(2, PrimOps.dotBind));
       prelude.bind('run-haxe', wrapPrimOp(1, PrimOps.runHaxe));
       prelude.bind('.=', wrapPrimOp(2, PrimOps.dotSet));
       prelude.bind('nth', wrapPrimOp(2, PrimOps.getNth));
-      prelude.bind('haxe-object-literal', wrapPrimOp(1, PrimOps.makeObjectLiteral));
+      prelude.bind('obhx', wrapPrimOp(1, PrimOps.makeObjectLiteral));
+      prelude.bind('hx', wrapPrimOp(1, PrimOps.pureHaxe));
+      prelude.bind('maphx', wrapPrimOp(2, PrimOps.mapHaxe));
     }
   }
 
@@ -84,8 +86,8 @@ class Evaluator {
 	
       case SymbolV(s): evalList( env, [ eval(env, head) ].concat( vs.slice(1)));
 
-      default: throw 'eval error, unknown expression pattern';
-	//apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
+	//      default: throw 'eval error, unknown expression pattern';
+      default: apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
       };
   }
 

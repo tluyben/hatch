@@ -22,10 +22,17 @@ class Prelude {
      {name: 'odd?', form: '(<> not even?)'},
      {name: 'zip', form: '(-> (rest&) (if (or (empty? rest&) (some? empty? rest&)) () 
                                           (cons (map head rest&) (apply zip (map tail rest&)))))'},
-     {name: '++', form: '(-> (rest&) (foldl concat (head rest&) (tail rest&)))'},
-     {name: '.>>', form: '(-> (op rest&) (foldl bind. op rest&))'},
-     {name: '..', form: '(-> (symbol) (. symbol ()))'},
-     {name: ':', form: '(-> (rest&) (haxe-object-literal rest&))'}
+     {name: '>>=', form: '(-> (op rest&) (foldl bindhx op rest&))'},
+     {name: 'constant', form: '(-> (c) (-> (ignore) c))'},
+     {name: '>>', form: '(-> (op rest&) (apply >>= (cons op (map constant rest&))))'},
+     {name: '<-', form: '(-> (symbol) (. symbol ()))'},
+     {name: ':', form: '(-> (rest&) (obhx rest&))'},
+     {name: '<@', form: '(-> (rest&) 
+                                  (apply >>= 
+                                         (cons (hx ()) 
+                                               (map (-> (op) (-> (acc) (maphx (cons _ acc) op))) rest&))))'},
+     {name: '.>', form: 'hx'}
+
      ];
 
 }

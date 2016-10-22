@@ -43,6 +43,29 @@ class REPL {
     loadPrelude();
   }
 
+  private static function isCompleteForm ( f:String ) : (Bool)
+  {
+    var left : Int = 0;
+    var right : Int = 0;
+    var notInString = true;
+    for (i in 0...f.length)
+      {
+	if (f.charAt(i) == '"')
+	  {
+	    notInString = !notInString;
+	  }
+	else if (notInString && f.charAt(i) == '(')
+	  {
+	    left += 1;
+	  }
+	else if (notInString && f.charAt(i) == ')')
+	  {
+	    right += 1;
+	  }
+      }
+    return left == right;
+  }
+  
   private static function loadPrelude () {
     for (def in Prelude.coreFunctions)
       {
@@ -78,23 +101,30 @@ class REPL {
     if (histIndex == -1) inProgress = s;
   }
   
-  // public static function expose (s : String, d : Dynamic) {
-  //   Evaluator.setCore( s, d);
-  // }
-  
   public static function repl( s : String) : (String) {
-    switch (Reader.read( s )) {
-    case Left(e): return 'READ ERROR $e';
-    case Right(ListV([SymbolV('quit')])): {
-      running = false;
-      return '\nGOOD BYE!\n';
-    }
-    case Right(v): try {
-        return Evaluator.eval( Evaluator.prelude, v ).show();
-      } catch (e:Dynamic) {
-        return 'EVAL ERROR for ${v.show()},  $e';
+    inProgress += ' ' + s;
+    if (isCompleteForm( inProgress ))
+      {
+	var formstring = inProgress;
+	inProgress = '';
+	switch (Reader.read( formstring ))
+	  {
+	  case Left(e): return 'READ ERROR $e';
+	  case Right(ListV([SymbolV('quit')])): {
+	    running = false;
+	    return '\nGOOD BYE!\n';
+	  }
+	  case Right(v): try {
+	      return Evaluator.eval( Evaluator.prelude, v ).show();
+	    } catch (e:Dynamic) {
+	      return 'EVAL ERROR for ${v.show()},  $e';
+	    }
+	  }
       }
-    }
+    else
+      {
+	return '';
+      }
   }
 
   private static var running : Bool = true;
@@ -103,29 +133,16 @@ class REPL {
 #if sys
     Sys.stdout().writeString('$HEADER\nVersion $VERSION\n');
     while (running) {
-      Sys.stdout().writeString("\n> ");
-      Sys.stdout().flush();
+      if (inProgress.length == 0)
+	{
+	  Sys.stdout().writeString("\n> ");
+	  Sys.stdout().flush();
+	}
       var input = Sys.stdin().readLine();
       Sys.stdout().writeString( repl( input ));
       Sys.stdout().flush();
     }
 #end
   };
-//       switch (Reader.read(input)) {
-//       case Left(e): {
-//         Sys.stdout().writeString('\n $e');
-//         Sys.stdout().flush();
-//       }
-//       case Right(v): try {
-// 	  Sys.stdout().writeString('\n ${Printer.show(Evaluator.eval(v))}');
-//           Sys.stdout().flush();
-// 	} catch (e:Dynamic) {
-// 	  Sys.stdout().writeString('\n ${e}');
-//           Sys.stdout().flush();
-// 	}
-//       }
-//     }
-// #end
-//   }
 
 }

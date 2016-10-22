@@ -156,9 +156,11 @@ class PrimOps
 	HaxeOpV(function () {
 	    try {
 	      var evaluated = HaxeEnv.evaluate( haxeRef, vals.map(HatchValueUtil.toHaxe ));
-	      return ListV([SymbolV('ok'), HatchValueUtil.fromHaxe( evaluated )]);	  
+	      return ok( HatchValueUtil.fromHaxe( evaluated ) );
+	      //	      return ListV([SymbolV('ok'), HatchValueUtil.fromHaxe( evaluated )]);	  
 	    } catch ( e:Dynamic ) {
-	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	      return fail( Std.string( e ));
+	      //	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
 	    }
 	  });
       case [ context, ListV(vals)] if ( vals.length >= 1 && HatchValueUtil.isSymbol(vals[0])):
@@ -167,9 +169,11 @@ class PrimOps
 	      var evaluated = HaxeEnv.evaluate( vals[0].toHaxe(),
 						vals.slice(1).map(HatchValueUtil.toHaxe),
 						context.toHaxe());
-	      return ListV([SymbolV('ok'), HatchValueUtil.fromHaxe( evaluated )]);	  
+	      return ok( HatchValueUtil.fromHaxe( evaluated ) );
+	      //	      return ListV([SymbolV('ok'), HatchValueUtil.fromHaxe( evaluated )]);	  
 	    } catch (e:Dynamic) {
-	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	      return fail( Std.string( e ));
+	      //	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
 	    }
 	  });
       default: throw "the . primitive called with malformed arguments";
@@ -184,9 +188,11 @@ class PrimOps
 	HaxeOpV(function () {
 	    try {
 	      HaxeEnv.setSymbol(haxeRef, v.toHaxe());
-	      return ListV([SymbolV('ok'), args[0]]);
+	      //	      return ListV([SymbolV('ok'), args[0]]);
+	      return ok( args[0] );
 	    } catch (e:Dynamic) {
-	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	      //	      return ListV([SymbolV('fail'), StringV(Std.string(e))]);
+	      return fail( Std.string(e) );
 	    }
 	  });	    
       default: throw ' the .= primitive called with malformed arguments';
@@ -262,6 +268,25 @@ class PrimOps
       }
     return a;
   }
+
+  private static function ok (v : HatchValue) : (HatchValue)
+  {
+    return ListV([SymbolV('ok'), v]);
+  }
+
+  private static function fail (v : String) : (HatchValue)
+  {
+    return ListV([SymbolV('fail'), StringV(v)]);
+  }
+  
+  public static function pureHaxe (args : Array<HatchValue>)
+  {
+    return switch (args)
+      {
+      case [v]: HaxeOpV(function () {return ok(v);});
+      default: throw '`haxe` takes a single expression';
+      }
+  }
   
   public static function makeObjectLiteral (args : Array<HatchValue>)
   {
@@ -275,10 +300,28 @@ class PrimOps
 	      {
 		Reflect.setField(ob, pair.attrib, pair.value);
 	      }
-	    return HaxeV(ob);
+	    return ok( HaxeV(ob));
 	  });
       default: throw "bad call to make object literal";
       }
+  }
+
+  public static function mapHaxe (args : Array<HatchValue>)
+  {
+    return switch (args)
+      {
+      case [FunctionV(_,_,_), HaxeOpV(op)]:
+	HaxeOpV(function () {
+	    var res = op();
+	    return switch ( res )
+	      {
+	      case ListV([SymbolV('fail'), _]): res;
+	      case ListV([SymbolV('ok'), val]): ok( Evaluator.apply( args[0], [val] ));
+	      default: fail( "haxe op returned unexpected value");
+	      };
+	  });
+      default: throw "maphx takes two arguments";
+      };
   }
 
 }
