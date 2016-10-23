@@ -29,11 +29,11 @@ class Evaluator {
       prelude.bind('concat', wrapPrimOp(2, PrimOps.concat));
       prelude.bind('.', wrapPrimOp(2, PrimOps.dot));
       prelude.bind('bindhx', wrapPrimOp(2, PrimOps.dotBind));
-      prelude.bind('run-haxe', wrapPrimOp(1, PrimOps.runHaxe));
+      prelude.bind('runhx', wrapPrimOp(1, PrimOps.runHaxe));
       prelude.bind('.=', wrapPrimOp(2, PrimOps.dotSet));
       prelude.bind('nth', wrapPrimOp(2, PrimOps.getNth));
       prelude.bind('obhx', wrapPrimOp(1, PrimOps.makeObjectLiteral));
-      prelude.bind('hx', wrapPrimOp(1, PrimOps.pureHaxe));
+      prelude.bind('.>', wrapPrimOp(1, PrimOps.pureHaxe));
       prelude.bind('maphx', wrapPrimOp(2, PrimOps.mapHaxe));
     }
   }
@@ -68,8 +68,6 @@ class Evaluator {
 
       case SymbolV('quote'): vs[1];
 
-      case SymbolV('macro') if (vs.length == 3): evalMacro( env, vs.slice( 1 ));
-
       case SymbolV('if') if( vs.length == 4): evalIf( env, vs.slice( 1 ) );
 
       case SymbolV('lambda'), SymbolV('->') if (vs.length == 3): evalLambda( env , vs.slice( 1 ));
@@ -82,8 +80,6 @@ class Evaluator {
 
       case FunctionV(_,_,_): apply( head, [for (v in vs.slice(1)) eval( env, v)]);
 
-      case MacroV(ps,bod,def,_): apply( MacroV(ps,bod,def,env), vs.slice(1));
-	
       case SymbolV(s): evalList( env, [ eval(env, head) ].concat( vs.slice(1)));
 
       default: throw 'cannot evaluate form with head $head';
@@ -135,15 +131,6 @@ class Evaluator {
     return a.map( HatchValueUtil.symbolString );
   }
 
-  private static function evalMacro (env : HatchEnv, forms : Array<HatchValue>) : (HatchValue)
-  {
-    return switch (forms)
-      {
-      case [ListV( params ), body] if (params.foreach( HatchValueUtil.isSymbol)):
-	MacroV( unpackSymbols( params ), body, env, null);
-      default: throw 'Malformed macro expression';
-      };
-  }
   
   private static function evalLambda ( env : HatchEnv, forms : Array<HatchValue> ) : (HatchValue)
   {
@@ -224,24 +211,8 @@ class Evaluator {
       case FunctionV( params, body, env ) if (params.length == args.length): 
 	callFunction( env, params, args, body );
 
-      case MacroV(params, body, def, call) if (validRestArgs( params, args)):
-	callMacro(def,call, params, restArgs( args, params), body);
-	
-      case MacroV(params, body, def, call) if (params.length == args.length):
-	callMacro(def,call, params, args, body);
-        
       default: throw 'Error, cannot apply form to supplied arguments';
       }
-  }
-
-  private static function callMacro (def : HatchEnv,
-				      call: HatchEnv,
-				      ps : Array<String>,
-				      args : Array<HatchValue>,
-				      body: HatchValue) : (HatchValue)
-  {
-    var callEnv = def.extend( ps, args ).join( call );
-    return eval( callEnv, body );
   }
 
   public static function callFunction( env : HatchEnv,
