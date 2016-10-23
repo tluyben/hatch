@@ -5,12 +5,12 @@ import hatch.HatchValue.HatchValue;
 class HatchEnv {
 
   private var table : Map<String,HatchValue>;
-  private var parent : HatchEnv;
+  private var parents : Array<HatchEnv>;
 
   public function new ()
   {
     table = new Map();
-    parent = null;
+    parents = [];
   }
 
   public function defined (s : String) : (Bool)
@@ -23,14 +23,14 @@ class HatchEnv {
     var v = table.get( s );
     if (v == null)
       {
-        if (parent == null)
-          {
-            throw 'Error: $s unbound in this context';
-          }
-        else
-          {
-            return parent.lookup( s );
-          }
+	for (p in parents)
+	  {
+	    v = p.lookup( s );
+	    if (v != null)
+	      {
+		return v;
+	      }
+	  }
       }
     return v;
   }
@@ -47,8 +47,15 @@ class HatchEnv {
       {
         env.bind( vars[i], vals[i] ); 
       }
-    env.parent = this;
+    env.parents = [this];
     return env;    
+  }
+
+  public function join (env : HatchEnv) : (HatchEnv)
+  {
+    var newEnv = new HatchEnv();
+    newEnv.parents = env.parents.concat(this.parents);
+    return newEnv;
   }
   
 }

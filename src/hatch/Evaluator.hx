@@ -82,12 +82,11 @@ class Evaluator {
 
       case FunctionV(_,_,_): apply( head, [for (v in vs.slice(1)) eval( env, v)]);
 
-      case MacroV(_,_,_): apply( head, vs.slice(1));
+      case MacroV(ps,bod,def,_): apply( MacroV(ps,bod,def,env), vs.slice(1));
 	
       case SymbolV(s): evalList( env, [ eval(env, head) ].concat( vs.slice(1)));
 
-	//      default: throw 'eval error, unknown expression pattern';
-      default: apply( eval(env, head), [for (v in vs.slice(1)) eval( env, v )]);
+      default: throw 'cannot evaluate form with head $head';
       };
   }
 
@@ -141,7 +140,7 @@ class Evaluator {
     return switch (forms)
       {
       case [ListV( params ), body] if (params.foreach( HatchValueUtil.isSymbol)):
-	  MacroV( unpackSymbols( params), body, env);
+	MacroV( unpackSymbols( params ), body, env, null);
       default: throw 'Malformed macro expression';
       };
   }
@@ -225,14 +224,24 @@ class Evaluator {
       case FunctionV( params, body, env ) if (params.length == args.length): 
 	callFunction( env, params, args, body );
 
-      case MacroV(params, body, env) if (validRestArgs( params, args)):
-	callFunction(env, params, restArgs( args, params), body);
+      case MacroV(params, body, def, call) if (validRestArgs( params, args)):
+	callMacro(def,call, params, restArgs( args, params), body);
 	
-      case MacroV(params, body, env) if (params.length == args.length):
-	callFunction(env, params, args, body);
+      case MacroV(params, body, def, call) if (params.length == args.length):
+	callMacro(def,call, params, args, body);
         
       default: throw 'Error, cannot apply form to supplied arguments';
       }
+  }
+
+  private static function callMacro (def : HatchEnv,
+				      call: HatchEnv,
+				      ps : Array<String>,
+				      args : Array<HatchValue>,
+				      body: HatchValue) : (HatchValue)
+  {
+    var callEnv = def.extend( ps, args ).join( call );
+    return eval( callEnv, body );
   }
 
   public static function callFunction( env : HatchEnv,

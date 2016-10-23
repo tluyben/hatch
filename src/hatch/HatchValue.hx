@@ -12,7 +12,8 @@ enum HatchValue {
              env : HatchEnv);
   MacroV( parameters : Array<String>,
 	  body : HatchValue,
-	  env : HatchEnv);
+	  defEnv : HatchEnv,
+	  callEnv : HatchEnv);
   PrimOpV( op : Array<HatchValue> -> HatchValue);
   HaxeV( v : Dynamic);
   HaxeOpV( op : Void -> HatchValue); 
