@@ -31,6 +31,10 @@ class HatchEnv {
 		return v;
 	      }
 	  }
+	if (v == null)
+	  {
+	    throw 'Unbound symbol $s';
+	  }
       }
     return v;
   }
