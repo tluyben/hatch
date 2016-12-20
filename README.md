@@ -14,6 +14,21 @@ so for some time.  The hatch parser is extremely simple and makes use
 of the [farcek](https://github.com/asciiascetic/farcek) monadic
 parser-combinator library.  
 
+Example
+--------
+
+Though not up to date with the latest and greatest hatch features, and infact the language has changed quite a bit, you can still view a [live REPL of hatch here](http://asciiascetic.github.io/projects/hatch/), it runs inside an [OpenFL](http://www.openfl.org/) project and exposes some basic openfl drawing commands.  
+
+You can run through a mini tutorial in demo REPL by following the instructions in the following commands:
+
+    (help example)
+    (example 1)
+    (example 2)
+    ...
+    (example 6)
+
+enjoy!
+
 Using
 -------
 
